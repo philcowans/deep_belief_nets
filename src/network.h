@@ -4,6 +4,7 @@
 #include "connection.h"
 #include "dataset.h"
 #include "layer.h"
+#include "rng_state.h"
 
 class Network {
 public:
@@ -17,8 +18,9 @@ private:
   Layer **m_layers;
   Connection **m_connections;
 
-  void greedily_train_layer(Dataset *training_data, int n);
+  void greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n);
   void optimize_weights(Dataset *training_data);
+  void transform_dataset_for_layer(Dataset *training_data, int n, bool *observed);
 };
 
 #endif

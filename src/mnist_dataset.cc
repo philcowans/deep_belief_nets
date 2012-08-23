@@ -51,3 +51,7 @@ void MnistDataset::load_labels(const char *filename) {
 
   data_file.close();
 }
+
+bool MnistDataset::get_value(int i) {
+  return false;
+}

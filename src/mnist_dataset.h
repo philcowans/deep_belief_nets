@@ -9,6 +9,7 @@ class MnistDataset : public Dataset {
 public:
   MnistDataset(const char *images_filename, const char *labels_filename);
   ~MnistDataset();
+  virtual bool get_value(int i);
   
 private:
   int32_t m_num_images;
