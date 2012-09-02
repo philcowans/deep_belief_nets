@@ -7,3 +7,7 @@ Layer::Layer(int size) {
 int Layer::size() {
   return m_size;
 }
+
+double Layer::get_bias(int i) {
+  return 0.0;
+}

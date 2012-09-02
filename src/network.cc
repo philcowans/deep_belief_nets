@@ -1,5 +1,7 @@
 #include "network.h"
 
+#include <cmath>
+
 Network::Network() {
   m_num_layers = 4;
   m_layer_sizes = new int[m_num_layers];
@@ -29,9 +31,9 @@ Network::~Network() {
   delete[] m_connections;
 }
 
-void Network::train(Dataset *training_data) {
+void Network::train(gsl_rng *rng, Dataset *training_data) {
   for(int i = 0; i < m_num_layers - 2; ++i) {
-    greedily_train_layer(training_data, i);
+    greedily_train_layer(rng, training_data, i);
   }
   optimize_weights(training_data);
 }
@@ -52,12 +54,12 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) 
   // 2. Compute expectation over visible / hidden product
 
   for(int k = 0; k < 1; ++k) {
-    find_probs_upwards(p_hidden, size_above, observed, size_below, m_connections[n]);
+    find_probs_upwards(p_hidden, size_above, observed, size_below, m_connections[n], m_layers[n + 1]);
     
     // 3. Run Gibbs sampling for the appropriate number of steps
     
     sample(rng, hidden, p_hidden, size_above);
-    find_probs_downwards(p_observed, size_below, hidden, size_above, m_connections[n]);
+    find_probs_downwards(p_observed, size_below, hidden, size_above, m_connections[n], m_layers[n]);
     sample(rng, observed, p_observed, size_below);
   }
 
@@ -83,12 +85,23 @@ void Network::sample(gsl_rng *rng, bool *target, double *p, int size) {
   }
 }
 
-void Network::find_probs_upwards(double *p_above, int n_above, bool *below, int n_below, Connection *connection) {
-  
+void Network::find_probs_upwards(double *p_above, int n_above, bool *below, int n_below, Connection *connection, Layer *layer_above) {
+  for(int i = 0; i < n_above; ++i) {
+    double activation = 0.0;
+    for(int j = 0; j < n_below; ++j) {
+      if(below[j]) {
+	activation += connection->get_weight(j,i);
+      }
+      else {
+	activation -= connection->get_weight(j,i);
+      }
+    }
+    p_above[i] = 1.0 / (1.0 + exp(-layer_above->get_bias(i) - activation));
+  }
 }
 
-void Network::find_probs_downwards(double *p_below, int n_below, bool *above, int n_above, Connection *connection) {
-  for(int i = 0; i < n_below, ++i) {
+void Network::find_probs_downwards(double *p_below, int n_below, bool *above, int n_above, Connection *connection, Layer *layer_below) {
+  for(int i = 0; i < n_below; ++i) {
     double activation = 0.0;
     for(int j = 0; j < n_above; ++j) {
       if(above[j]) {
@@ -98,6 +111,6 @@ void Network::find_probs_downwards(double *p_below, int n_below, bool *above, in
 	activation -= connection->get_weight(i,j);
       }
     }
-    p_below[i] = 1.0 / (1.0 + exp(-connection->get_bias(i) - activation));
+    p_below[i] = 1.0 / (1.0 + exp(-layer_below->get_bias(i) - activation));
   }
 }
