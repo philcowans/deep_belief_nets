@@ -24,6 +24,11 @@ void MnistDataset::load_images(const char *filename) {
   data_file.read(reinterpret_cast<char *>(&m_num_images), sizeof(m_num_images));
   data_file.read(reinterpret_cast<char *>(&m_num_rows), sizeof(m_num_rows));
   data_file.read(reinterpret_cast<char *>(&m_num_cols), sizeof(m_num_cols));
+
+  magic = __builtin_bswap32(magic);
+  m_num_images = __builtin_bswap32(m_num_images);
+  m_num_rows = __builtin_bswap32(m_num_rows);
+  m_num_cols = __builtin_bswap32(m_num_cols);
   
   m_image_data = new uint8_t*[m_num_images];
   for(int i = 0; i < m_num_images; ++i) {
@@ -44,6 +49,9 @@ void MnistDataset::load_labels(const char *filename) {
   data_file.read(reinterpret_cast<char *>(&magic), sizeof(magic));
   data_file.read(reinterpret_cast<char *>(&m_num_images), sizeof(m_num_images));
   
+  magic = __builtin_bswap32(magic);
+  m_num_images = __builtin_bswap32(m_num_images);
+
   m_labels = new uint8_t[m_num_images];
   for(int i = 0; i < m_num_images; ++i) {
     data_file.read(reinterpret_cast<char *>(m_labels + i), 1);
