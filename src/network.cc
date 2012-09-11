@@ -1,10 +1,17 @@
 #include "network.h"
 
 #include <cmath>
+#include <cstring>
 
-Network::Network() {
+Network::Network(Monitor *monitor) {
+  m_monitor = monitor;
   m_num_layers = 4;
   m_layer_sizes = new int[m_num_layers];
+
+  for(int i = 0; i < m_num_layers; ++i) {
+    m_layer_sizes[i] = 784;
+  }
+
   m_layers = new Layer*[m_num_layers];
   m_connections = new Connection*[m_num_layers - 1];
 
@@ -32,6 +39,7 @@ Network::~Network() {
 }
 
 void Network::train(gsl_rng *rng, Dataset *training_data) {
+  m_monitor->log_event("Starting network training");
   for(int i = 0; i < m_num_layers - 2; ++i) {
     greedily_train_layer(rng, training_data, i);
   }
@@ -46,25 +54,71 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) 
   double *p_observed = new double[size_below];
   double *p_hidden = new double[size_above];
 
-  // Rough outline
-  // 1. Clamp visible units at observed values
+  double epsilon = 0.1;
+  double delta_w[size_above * size_below];
+  double delta_b[size_below];
+  double delta_c[size_above];
 
-  transform_dataset_for_layer(training_data, n, observed);
+  int num_iterations = 100;
 
-  // 2. Compute expectation over visible / hidden product
-
-  for(int k = 0; k < 1; ++k) {
+  for(int k = 0; k < num_iterations; ++k) {
+    memset(delta_w, 0, size_above * size_below * sizeof(double));
+    memset(delta_b, 0, size_below * sizeof(double));
+    memset(delta_c, 0, size_above * sizeof(double));
+    
+    training_data->get_sample(rng, observed);
+    transform_dataset_for_layer(observed, n);
+    
     find_probs_upwards(p_hidden, size_above, observed, size_below, m_connections[n], m_layers[n + 1]);
-    
-    // 3. Run Gibbs sampling for the appropriate number of steps
-    
     sample(rng, hidden, p_hidden, size_above);
+
+    // TODO: Check these are the right way round
+    for(int i = 0; i < size_above; ++i) {
+      for(int j = 0; j < size_below; ++j) {
+	if(observed[i] && hidden[i]) {
+	  delta_w[i + size_above * j] += epsilon;
+	}
+      }
+    }
+
+    for(int i = 0; i < size_below; ++i) {
+      if(observed[i]) {
+	delta_b[i] += epsilon;
+      }
+    }
+
+    for(int i = 0; i < size_above; ++i) {
+      if(hidden[i]) {
+	delta_c[i] += epsilon;
+      }
+    }
+    
     find_probs_downwards(p_observed, size_below, hidden, size_above, m_connections[n], m_layers[n]);
     sample(rng, observed, p_observed, size_below);
+    find_probs_upwards(p_hidden, size_above, observed, size_below, m_connections[n], m_layers[n + 1]);
+
+    for(int i = 0; i < size_above; ++i) {
+      for(int j = 0; j < size_below; ++j) {
+        if(observed[i]) {
+          delta_w[i + size_above * j] -= epsilon * p_hidden[j];
+        }
+      }
+    }
+
+    for(int i = 0; i < size_below; ++i) {
+      if(observed[i]) {
+        delta_b[i] -= epsilon;
+      }
+    }
+
+    for(int i = 0; i < size_above; ++i) {
+      delta_c[i] -= epsilon * p_hidden[i];
+    }
+      
+    m_connections[n]->update_weights(delta_w);
+    m_layers[n]->update_biases(delta_b);
+    m_layers[n]->update_biases(delta_c);
   }
-
-  // 4. Update weights
-
   delete[] observed;
   delete[] hidden;
 }
@@ -72,11 +126,8 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) 
 void Network::optimize_weights(Dataset *training_data) {
 }
 
-void Network::transform_dataset_for_layer(Dataset *training_data, int n, bool *observed) {
-  int size = m_layers[n]->size();
-  for(int i = 0; i < size; ++i) {
-    observed[i] = training_data->get_value(i);
-  }
+void Network::transform_dataset_for_layer(bool *sample, int n) {
+  // no-op until we start working at deeper layers
 }
 
 void Network::sample(gsl_rng *rng, bool *target, double *p, int size) {

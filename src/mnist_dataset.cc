@@ -63,3 +63,10 @@ void MnistDataset::load_labels(const char *filename) {
 bool MnistDataset::get_value(int i) {
   return false;
 }
+
+void MnistDataset::get_sample(gsl_rng *r, bool *sample) {
+  int active_image = gsl_rng_uniform_int(r, m_num_images);
+  for(int i = 0; i< m_num_rows * m_num_cols; ++i) {
+    sample[i] = gsl_rng_uniform_int(r, 255) < m_image_data[active_image][i];
+  }
+}

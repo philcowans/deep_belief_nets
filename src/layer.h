@@ -6,6 +6,7 @@ public:
   Layer(int size);
   int size();
   double get_bias(int i);
+  void update_biases(double *delta);
 
 private:
   int m_size;

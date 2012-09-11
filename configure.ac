@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.68])
+AC_PREREQ([2.60])
 AC_INIT(rbm, 0.1, phil@philcowans.com)
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/main.cc])
