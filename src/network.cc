@@ -2,6 +2,9 @@
 
 #include <cmath>
 #include <cstring>
+#include <sstream>
+
+#include <iostream>
 
 Network::Network(Monitor *monitor) {
   m_monitor = monitor;
@@ -54,7 +57,7 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) 
   double *p_observed = new double[size_below];
   double *p_hidden = new double[size_above];
 
-  double epsilon = 0.1;
+  double epsilon = 0.01;
   double delta_w[size_above * size_below];
   double delta_b[size_below];
   double delta_c[size_above];
@@ -95,6 +98,7 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) 
     
     find_probs_downwards(p_observed, size_below, hidden, size_above, m_connections[n], m_layers[n]);
     sample(rng, observed, p_observed, size_below);
+ 
     find_probs_upwards(p_hidden, size_above, observed, size_below, m_connections[n], m_layers[n + 1]);
 
     for(int i = 0; i < size_above; ++i) {
@@ -118,6 +122,15 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) 
     m_connections[n]->update_weights(delta_w);
     m_layers[n]->update_biases(delta_b);
     m_layers[n]->update_biases(delta_c);
+
+    std::stringstream log_line;
+    log_line << "Update: " << k << " ";
+    for(int i = 100; i < 110; ++i) {
+      log_line << m_connections[n]->get_weight(100, i) << " ";
+    }
+    m_monitor->log_event(log_line.str().c_str());
+
+
   }
   delete[] observed;
   delete[] hidden;
@@ -141,10 +154,7 @@ void Network::find_probs_upwards(double *p_above, int n_above, bool *below, int 
     double activation = 0.0;
     for(int j = 0; j < n_below; ++j) {
       if(below[j]) {
-	activation += connection->get_weight(j,i);
-      }
-      else {
-	activation -= connection->get_weight(j,i);
+	activation += connection->get_weight(i,j);
       }
     }
     p_above[i] = 1.0 / (1.0 + exp(-layer_above->get_bias(i) - activation));
@@ -156,10 +166,7 @@ void Network::find_probs_downwards(double *p_below, int n_below, bool *above, in
     double activation = 0.0;
     for(int j = 0; j < n_above; ++j) {
       if(above[j]) {
-	activation += connection->get_weight(i,j);
-      }
-      else {
-	activation -= connection->get_weight(i,j);
+	activation += connection->get_weight(j,i);
       }
     }
     p_below[i] = 1.0 / (1.0 + exp(-layer_below->get_bias(i) - activation));
