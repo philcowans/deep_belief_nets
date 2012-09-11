@@ -2,7 +2,8 @@
 
 #include <fstream>
 
-MnistDataset::MnistDataset(const char *images_filename, const char *labels_filename) {
+MnistDataset::MnistDataset(const char *images_filename, const char *labels_filename, bool fixed_image) {
+  m_fixed_image = fixed_image;
   load_images(images_filename);
   load_labels(labels_filename);
 }
@@ -65,7 +66,13 @@ bool MnistDataset::get_value(int i) {
 }
 
 void MnistDataset::get_sample(gsl_rng *r, bool *sample) {
-  int active_image = gsl_rng_uniform_int(r, m_num_images);
+  int active_image;
+  if(m_fixed_image) {
+    active_image = 200;
+  }
+  else {
+    active_image = gsl_rng_uniform_int(r, m_num_images);
+  }
   for(int i = 0; i< m_num_rows * m_num_cols; ++i) {
     sample[i] = gsl_rng_uniform_int(r, 255) < m_image_data[active_image][i];
   }
