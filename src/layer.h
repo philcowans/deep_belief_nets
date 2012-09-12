@@ -7,11 +7,15 @@ public:
   ~Layer();
   int size();
   double get_bias(int i);
-  void update_biases(double *delta);
+  
+  void reset_deltas();
+  void update_biases(int i, double delta);
+  void commit_deltas();
 
 private:
   int m_size;
   double *m_biases;
+  double *m_deltas;
 };
 
 #endif
