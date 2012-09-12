@@ -42,12 +42,12 @@ Network::~Network() {
   delete[] m_connections;
 }
 
-void Network::train(gsl_rng *rng, Dataset *training_data) {
+void Network::train(gsl_rng *rng, Dataset *training_data, Schedule *schedule) {
   m_monitor->log_event("Starting network training");
-  for(int i = 0; i < m_num_layers - 1; ++i) {
-    greedily_train_layer(rng, training_data, i);
+  schedule->reset();
+  while(schedule->step()) {
+    greedily_train_layer(rng, training_data, schedule->target_layer());
   }
-  optimize_weights(training_data);
 }
 
 void Network::sample_input(gsl_rng *rng, bool *outputs) {
@@ -99,8 +99,6 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) 
   int size_below = m_layers[n]->size();
   int size_above = m_layers[n + 1]->size();
 
-  std::cout << "Training layer " << n << " size below = " << size_below << ", above = " << size_above << std::endl;
-
   bool *observed = new bool[size_below];
   bool *hidden = new bool[size_above];
   double *p_observed = new double[size_below];
@@ -111,9 +109,6 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) 
   double delta_b[size_below];
   double delta_c[size_above];
 
-  int num_iterations = 100000;
-
-  for(int k = 0; k < num_iterations; ++k) {
     memset(delta_w, 0, size_above * size_below * sizeof(double));
     memset(delta_b, 0, size_below * sizeof(double));
     memset(delta_c, 0, size_above * sizeof(double));
@@ -173,20 +168,15 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) 
     m_layers[n + 1]->update_biases(delta_c);
 
     std::stringstream log_line;
-    log_line << "Update: " << k << "\t";
     for(int i = 100; i < 110; ++i) {
       log_line << m_connections[n]->get_weight(100, i) << "\t";
      }
     m_monitor->log_event(log_line.str().c_str());
 
 
-  }
   delete[] input_observations;
   delete[] observed;
   delete[] hidden;
-}
-
-void Network::optimize_weights(Dataset *training_data) {
 }
 
 void Network::transform_dataset_for_layer(gsl_rng *rng, bool *input, bool *s, int n) {

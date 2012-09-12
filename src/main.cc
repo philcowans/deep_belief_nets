@@ -14,7 +14,8 @@ int main(int argc, char **argv) {
   Network n(&m);
 
   MnistDataset dataset("data/train-images-idx3-ubyte", "data/train-labels-idx1-ubyte", fixed_image);
-  n.train(rng, &dataset);
+  Schedule s;
+  n.train(rng, &dataset, &s);
 
   bool sample[28*28];
   n.sample_input(rng, sample);

@@ -5,6 +5,7 @@
 #include "dataset.h"
 #include "layer.h"
 #include "monitor.h"
+#include "schedule.h"
 
 #include "gsl/gsl_rng.h"
 
@@ -12,7 +13,7 @@ class Network {
 public:
   Network(Monitor *monitor);
   ~Network();
-  void train(gsl_rng *rng, Dataset *training_data);
+  void train(gsl_rng *rng, Dataset *training_data, Schedule *schedule);
   void sample_input(gsl_rng *rng, bool *outputs);
   
 private:
@@ -23,7 +24,6 @@ private:
   Connection **m_connections;
 
   void greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n);
-  void optimize_weights(Dataset *training_data);
   void transform_dataset_for_layer(gsl_rng *rng, bool *input, bool *s, int n);
   void sample(gsl_rng *rng, bool *target, double *p, int size);
   void find_probs_upwards(double *p_above, int n_above, bool *below, int n_below, Connection *connection, Layer *layer_above);
