@@ -7,7 +7,7 @@ int main(int argc, char **argv) {
   gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
 
   // params
-  bool fixed_image = true;
+  bool fixed_image = false;
   // ---
 
   Monitor m;

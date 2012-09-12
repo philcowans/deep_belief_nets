@@ -11,9 +11,10 @@ Network::Network(Monitor *monitor) {
   m_num_layers = 4;
   m_layer_sizes = new int[m_num_layers];
 
-  for(int i = 0; i < m_num_layers; ++i) {
-    m_layer_sizes[i] = 784; // TODO: Assumed to be constant for all layers througout the code
-  }
+  m_layer_sizes[0] = 784;
+  m_layer_sizes[1] = 500;
+  m_layer_sizes[2] = 500;
+  m_layer_sizes[3] = 2000;
 
   m_layers = new Layer*[m_num_layers];
   m_connections = new Connection*[m_num_layers - 1];
@@ -50,34 +51,56 @@ void Network::train(gsl_rng *rng, Dataset *training_data) {
 }
 
 void Network::sample_input(gsl_rng *rng, bool *outputs) {
-  int size_below = m_layers[m_num_layers - 1]->size();
-  int size_above;
+  int size_below = m_layers[m_num_layers - 2]->size();
+  int size_above = m_layers[m_num_layers - 1]->size();
+  double *p_above = new double[size_above];
   double *p = new double[size_below];
-  bool *s = new bool[size_below];
-  for(int i = 0; i < size_below; ++i) {
-    p[i] = 1.0 / (1.0 + exp(-m_layers[m_num_layers - 1]->get_bias(i)));
+  bool *s = new bool[size_above];
+  bool *o = new bool[size_below];
+  for(int i = 0; i < size_above; ++i) {
+    p_above[i] = 1.0 / (1.0 + exp(-m_layers[m_num_layers - 1]->get_bias(i)));
   }
-  sample(rng, s, p, size_below);
-  for(int i = m_num_layers - 2; i >= 0; --i) {
+  sample(rng, s, p, size_above);
+  int num_top_iterations = 1000;
+  for(int i = 0; i < num_top_iterations; ++i) {
+    find_probs_downwards(p, size_below, s, size_above, m_connections[m_num_layers-2], m_layers[m_num_layers-2]);
+    sample(rng, o, p, size_below);
+    find_probs_upwards(p_above, size_above, o, size_below, m_connections[m_num_layers-2], m_layers[m_num_layers-1]);
+    sample(rng, s, p_above, size_above);    
+  }
+  delete[] p_above;
+  delete[] s;
+
+  for(int i = m_num_layers - 3; i >= 0; --i) {
     size_above = size_below;
     size_below = m_layers[i]->size();
+    std::cout << size_below << std::endl;
     delete[] p;
     p = new double[size_below];
-    find_probs_downwards(p, size_below, s, size_above, m_connections[i], m_layers[i]);    
-    delete[] s;
-    s = new bool[size_below];
-    sample(rng, s, p, size_below);
+    find_probs_downwards(p, size_below, o, size_above, m_connections[i], m_layers[i]);    
+    for(int i = 0 ; i < size_below / 100; ++i) {
+      std::cout << "Downwards prob " << i * 100 << " = " << p[i*100] << std::endl;
+    }
+    delete[] o;
+    o = new bool[size_below];
+    sample(rng, o, p, size_below);
   }
   for(int i = 0; i < size_below; ++i) {
-    outputs[i] = s[i];
+    outputs[i] = o[i];
   }
   delete[] p;
-  delete[] s;
+  delete[] o;
 }
 
 void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) {
+  int input_size = m_layers[0]->size();
+  bool *input_observations = new bool[input_size];
+
   int size_below = m_layers[n]->size();
   int size_above = m_layers[n + 1]->size();
+
+  std::cout << "Training layer " << n << " size below = " << size_below << ", above = " << size_above << std::endl;
+
   bool *observed = new bool[size_below];
   bool *hidden = new bool[size_above];
   double *p_observed = new double[size_below];
@@ -88,15 +111,15 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) 
   double delta_b[size_below];
   double delta_c[size_above];
 
-  int num_iterations = 1000;
+  int num_iterations = 100000;
 
   for(int k = 0; k < num_iterations; ++k) {
     memset(delta_w, 0, size_above * size_below * sizeof(double));
     memset(delta_b, 0, size_below * sizeof(double));
     memset(delta_c, 0, size_above * sizeof(double));
     
-    training_data->get_sample(rng, observed);
-    transform_dataset_for_layer(rng, observed, n);
+    training_data->get_sample(rng, input_observations);
+    transform_dataset_for_layer(rng, input_observations, observed, n);
     
     find_probs_upwards(p_hidden, size_above, observed, size_below, m_connections[n], m_layers[n + 1]);
     sample(rng, hidden, p_hidden, size_above);
@@ -104,7 +127,7 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) 
     // TODO: Check these are the right way round
     for(int i = 0; i < size_above; ++i) {
       for(int j = 0; j < size_below; ++j) {
-	if(observed[i] && hidden[i]) {
+	if(observed[j] && hidden[i]) {
 	  delta_w[i + size_above * j] += epsilon;
 	}
       }
@@ -129,8 +152,8 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) 
 
     for(int i = 0; i < size_above; ++i) {
       for(int j = 0; j < size_below; ++j) {
-        if(observed[i]) {
-          delta_w[i + size_above * j] -= epsilon * p_hidden[j];
+        if(observed[j]) {
+          delta_w[i + size_above * j] -= epsilon * p_hidden[i];
         }
       }
     }
@@ -147,17 +170,18 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) 
       
     m_connections[n]->update_weights(delta_w);
     m_layers[n]->update_biases(delta_b);
-    m_layers[n]->update_biases(delta_c);
+    m_layers[n + 1]->update_biases(delta_c);
 
     std::stringstream log_line;
-    log_line << "Update: " << k << " ";
+    log_line << "Update: " << k << "\t";
     for(int i = 100; i < 110; ++i) {
-      log_line << m_connections[n]->get_weight(100, i) << " ";
-    }
+      log_line << m_connections[n]->get_weight(100, i) << "\t";
+     }
     m_monitor->log_event(log_line.str().c_str());
 
 
   }
+  delete[] input_observations;
   delete[] observed;
   delete[] hidden;
 }
@@ -165,17 +189,33 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) 
 void Network::optimize_weights(Dataset *training_data) {
 }
 
-void Network::transform_dataset_for_layer(gsl_rng *rng, bool *s, int n) {
-  for(int i = 0; i < n - 1; ++i) {
+void Network::transform_dataset_for_layer(gsl_rng *rng, bool *input, bool *s, int n) {
+  int size_below = m_layers[0]->size();
+  bool *d = new bool[size_below];
+  for(int i = 0; i < size_below; ++i) {
+    d[i] = input[i];
+  }
+
+  for(int i = 0; i < n; ++i) {
     int size_below = m_layers[i]->size();
     int size_above = m_layers[i + 1]->size();
     double *p_hidden = new double[size_above];
 
-    find_probs_upwards(p_hidden, size_above, s, size_below, m_connections[i], m_layers[i + 1]);
-    sample(rng, s, p_hidden, size_above);
+    find_probs_upwards(p_hidden, size_above, d, size_below, m_connections[i], m_layers[i + 1]);
+
+    delete[] d;
+    d = new bool[size_above];
+
+    sample(rng, d, p_hidden, size_above);
 
     delete[] p_hidden;
   }
+  
+  for(int i = 0; i < m_layers[n]->size(); ++i) {
+    s[i] = d[i];
+  }
+
+  delete[] d;
 }
 
 void Network::sample(gsl_rng *rng, bool *target, double *p, int size) {

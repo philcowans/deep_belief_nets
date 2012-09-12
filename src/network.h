@@ -24,7 +24,7 @@ private:
 
   void greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n);
   void optimize_weights(Dataset *training_data);
-  void transform_dataset_for_layer(gsl_rng *rng, bool *s, int n);
+  void transform_dataset_for_layer(gsl_rng *rng, bool *input, bool *s, int n);
   void sample(gsl_rng *rng, bool *target, double *p, int size);
   void find_probs_upwards(double *p_above, int n_above, bool *below, int n_below, Connection *connection, Layer *layer_above);
   void find_probs_downwards(double *p_below, int n_below, bool *above, int n_above, Connection *connection, Layer *layer_below);
