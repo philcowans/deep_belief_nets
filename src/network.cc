@@ -46,7 +46,7 @@ void Network::train(gsl_rng *rng, Dataset *training_data, Schedule *schedule) {
   m_monitor->log_event("Starting network training");
   schedule->reset();
   while(schedule->step()) {
-    greedily_train_layer(rng, training_data, schedule->target_layer());
+    greedily_train_layer(rng, training_data, schedule->target_layer(), schedule);
   }
 }
 
@@ -92,7 +92,7 @@ void Network::sample_input(gsl_rng *rng, bool *outputs) {
   delete[] o;
 }
 
-void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) {
+void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n, Schedule *schedule) {
   int input_size = m_layers[0]->size();
   bool *input_observations = new bool[input_size];
 
@@ -104,20 +104,20 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) 
   double *p_observed = new double[size_below];
   double *p_hidden = new double[size_above];
 
-  double epsilon = 0.01;
+  double epsilon = 0.001;
   double delta_w[size_above * size_below];
   double delta_b[size_below];
   double delta_c[size_above];
 
-    memset(delta_w, 0, size_above * size_below * sizeof(double));
-    memset(delta_b, 0, size_below * sizeof(double));
-    memset(delta_c, 0, size_above * sizeof(double));
-    
-    training_data->get_sample(rng, input_observations);
-    transform_dataset_for_layer(rng, input_observations, observed, n);
-    
-    find_probs_upwards(p_hidden, size_above, observed, size_below, m_connections[n], m_layers[n + 1]);
-    sample(rng, hidden, p_hidden, size_above);
+  memset(delta_w, 0, size_above * size_below * sizeof(double));
+  memset(delta_b, 0, size_below * sizeof(double));
+  memset(delta_c, 0, size_above * sizeof(double));
+  
+  training_data->get_sample(rng, input_observations, schedule->active_image());
+  transform_dataset_for_layer(rng, input_observations, observed, n);
+  
+  find_probs_upwards(p_hidden, size_above, observed, size_below, m_connections[n], m_layers[n + 1]);
+  sample(rng, hidden, p_hidden, size_above);
     
     // TODO: Check these are the right way round
     for(int i = 0; i < size_above; ++i) {
@@ -166,12 +166,6 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n) 
     m_connections[n]->update_weights(delta_w);
     m_layers[n]->update_biases(delta_b);
     m_layers[n + 1]->update_biases(delta_c);
-
-    std::stringstream log_line;
-    for(int i = 100; i < 110; ++i) {
-      log_line << m_connections[n]->get_weight(100, i) << "\t";
-     }
-    m_monitor->log_event(log_line.str().c_str());
 
 
   delete[] input_observations;

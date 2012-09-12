@@ -66,18 +66,8 @@ bool MnistDataset::get_value(int i) {
   return false;
 }
 
-void MnistDataset::get_sample(gsl_rng *r, bool *sample) {
-  int active_image;
-  if(m_fixed_image) {
-    active_image = 200;
-  }
-  else {
-    active_image = gsl_rng_uniform_int(r, m_num_images);
-  }
+void MnistDataset::get_sample(gsl_rng *r, bool *sample, int example_id) {
   for(int i = 0; i< m_num_rows * m_num_cols; ++i) {
-    //std::cout << i << " " << static_cast<int>(m_image_data[active_image][i]) << std::endl;
-    sample[i] = gsl_rng_uniform_int(r, 255) < m_image_data[active_image][i];
-
-      //gsl_rng_uniform_int(r, 255) < 128; //
+    sample[i] = gsl_rng_uniform_int(r, 255) < m_image_data[example_id][i];
   }
 }

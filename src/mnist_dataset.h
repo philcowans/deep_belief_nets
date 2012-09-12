@@ -10,7 +10,7 @@ public:
   MnistDataset(const char *images_filename, const char *labels_filename, bool fixed_image);
   ~MnistDataset();
   virtual bool get_value(int i);
-  virtual void get_sample(gsl_rng *r, bool *sample);
+  virtual void get_sample(gsl_rng *r, bool *sample, int example_id);
   
 private:
   bool m_fixed_image;
