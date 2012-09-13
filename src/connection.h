@@ -23,6 +23,12 @@ private:
   Layer *m_above;
   Layer *m_below;
 
+  bool *m_observed;
+  bool *m_hidden;
+  double *m_p_observed;
+  double *m_p_hidden;
+
+
   void find_probs_upwards(double *p_above, int n_above, bool *below, int n_below, Connection *connection, Layer *layer_above);
   void find_probs_downwards(double *p_below, int n_below, bool *above, int n_above, Connection *connection, Layer *layer_below);
   void sample(gsl_rng *rng, bool *target, double *p, int size);

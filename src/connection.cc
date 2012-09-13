@@ -11,10 +11,20 @@ Connection::Connection(Layer *below, Layer *above) {
   m_weights = new double[m_num_above * m_num_below];
   m_deltas = new double[m_num_above * m_num_below];
   memset(m_weights, 0, m_num_above * m_num_below * sizeof(double));
+
+  // Scratch space for training
+  m_observed = new bool[m_num_below];
+  m_hidden = new bool[m_num_above];
+  m_p_observed = new double[m_num_below];
+  m_p_hidden = new double[m_num_above];
 }
 
 Connection::~Connection() {
   delete[] m_weights;
+  delete[] m_observed;
+  delete[] m_hidden;
+  delete[] m_p_observed;
+  delete[] m_p_hidden;
 }
 
 double Connection::get_weight(int i, int j) {
@@ -66,13 +76,9 @@ void Connection::sample(gsl_rng *rng, bool *target, double *p, int size) {
 }
 
 void Connection::perform_update_step(gsl_rng *rng, bool *input_data) {
-  bool *observed = new bool[m_num_below]; // TODO - make these members to avoid repeated de/allocation
-  bool *hidden = new bool[m_num_above];
-  double *p_observed = new double[m_num_below];
-  double *p_hidden = new double[m_num_above];
 
   for(int i = 0; i < m_num_below; ++i) {
-    observed[i] = input_data[i];
+    m_observed[i] = input_data[i];
   }
 
   double epsilon = 0.001;
@@ -81,59 +87,53 @@ void Connection::perform_update_step(gsl_rng *rng, bool *input_data) {
   m_below->reset_deltas();
   m_above->reset_deltas();
   
-  find_probs_upwards(p_hidden, m_num_above, observed, m_num_below, this, m_above); // Passing this here seems bad
-  sample(rng, hidden, p_hidden, m_num_above);
+  find_probs_upwards(m_p_hidden, m_num_above, m_observed, m_num_below, this, m_above); // Passing this here seems bad
+  sample(rng, m_hidden, m_p_hidden, m_num_above);
     
   for(int i = 0; i < m_num_above; ++i) {
     for(int j = 0; j < m_num_below; ++j) {
-      if(observed[j] && hidden[i]) {
+      if(m_observed[j] && m_hidden[i]) {
 	update_weights(i, j, epsilon);
       }
     }
   }
   
   for(int i = 0; i < m_num_below; ++i) {
-    if(observed[i]) {
+    if(m_observed[i]) {
       m_below->update_biases(i, epsilon);
     }
   }
   
   for(int i = 0; i < m_num_above; ++i) {
-    if(hidden[i]) {
+    if(m_hidden[i]) {
       m_above->update_biases(i, epsilon);
     }
   }
   
-  find_probs_downwards(p_observed, m_num_below, hidden, m_num_above, this, m_below);
-  sample(rng, observed, p_observed, m_num_below);
+  find_probs_downwards(m_p_observed, m_num_below, m_hidden, m_num_above, this, m_below);
+  sample(rng, m_observed, m_p_observed, m_num_below);
   
-  find_probs_upwards(p_hidden, m_num_above, observed, m_num_below, this, m_above);
+  find_probs_upwards(m_p_hidden, m_num_above, m_observed, m_num_below, this, m_above);
   
   for(int i = 0; i < m_num_above; ++i) {
     for(int j = 0; j < m_num_below; ++j) {
-      if(observed[j]) {
-	update_weights(i, j, -epsilon * p_hidden[i]);
+      if(m_observed[j]) {
+	update_weights(i, j, -epsilon * m_p_hidden[i]);
       }
     }
   }
   
   for(int i = 0; i < m_num_below; ++i) {
-    if(observed[i]) {
+    if(m_observed[i]) {
       m_below->update_biases(i, -epsilon);
     }
   }
   
   for(int i = 0; i < m_num_above; ++i) {
-    m_above->update_biases(i, -epsilon * p_hidden[i]);
+    m_above->update_biases(i, -epsilon * m_p_hidden[i]);
   }
   
   commit_deltas();
   m_below->commit_deltas();
   m_above->commit_deltas();
-  
-
-  delete[] observed;
-  delete[] hidden;
-  delete[] p_observed;
-  delete[] p_hidden;
 }
