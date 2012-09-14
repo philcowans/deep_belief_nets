@@ -72,24 +72,26 @@ void Connection::perform_update_step(gsl_rng *rng) {
   reset_deltas();
   m_below->reset_deltas();
   m_above->reset_deltas();
-  
-  find_probs_upwards();
-  m_above->sample(rng);
-    
-  gsl_blas_dger(epsilon, m_above->m_state, m_below->m_state, m_deltas);
-  
-  m_below->update_biases(epsilon, true, true);
-  m_above->update_biases(epsilon, true, true);
-  
-  find_probs_downwards();
-  m_below->sample(rng);
-  find_probs_upwards();
-  
-  gsl_blas_dger(-epsilon, m_above->m_p, m_below->m_state, m_deltas); 
 
-  m_below->update_biases(epsilon, false, true);
-  m_above->update_biases(epsilon, false, false);
+  // Positive phase
   
+  propagate_observation(rng);
+
+  gsl_blas_dger (epsilon, m_above->m_state, m_below->m_state, m_deltas);
+  gsl_blas_daxpy(epsilon, m_below->m_state,                   m_below->m_deltas);
+  gsl_blas_daxpy(epsilon, m_above->m_state,                   m_above-> m_deltas);
+
+  // Negative phase
+
+  propagate_hidden(rng);
+  find_probs_upwards();
+  
+  gsl_blas_dger (-epsilon, m_above->m_p, m_below->m_state, m_deltas); 
+  gsl_blas_daxpy(-epsilon, m_below->m_state,               m_below->m_deltas);
+  gsl_blas_daxpy(-epsilon, m_above->m_p,                   m_above-> m_deltas);
+  
+  // Then commit the update
+
   commit_deltas();
   m_below->commit_deltas();
   m_above->commit_deltas();
@@ -98,9 +100,7 @@ void Connection::perform_update_step(gsl_rng *rng) {
 void Connection::sample_layer(gsl_rng *rng, int num_iterations) {
   // Assume that sensible values are already loaded into layer above's activity
   for(int i = 0; i < num_iterations; ++i) {
-    find_probs_downwards();
-    m_below->sample(rng);
-    find_probs_upwards();
-    m_above->sample(rng);
+    propagate_hidden();
+    propagate_observed();
   }
 }

@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstring>
+#include <gsl/gsl_blas.h>
 
 Layer::Layer(int size) {
   m_size = size;
@@ -24,31 +25,6 @@ int Layer::size() {
 
 double Layer::get_bias(int i) {
   return gsl_vector_get(m_biases, i);
-}
-
-void Layer::update_biases(double epsilon, bool positive, bool stochastic) {
-  for(int i = 0; i < m_size; ++i) {
-    if(positive) {
-      if(stochastic) {
-	if(gsl_vector_get(m_state, i) == 1.0) {
-	  gsl_vector_set(m_deltas, i, gsl_vector_get(m_deltas, i) + epsilon);
-	}
-      } 
-      else {
-	// YAGNI - this is never used.
-      }
-    }
-    else {
-      if(stochastic) {
-	if(gsl_vector_get(m_state, i) == 1.0) {
-	  gsl_vector_set(m_deltas, i, gsl_vector_get(m_deltas, i) - epsilon);
-	}
-      }
-      else {
-	gsl_vector_set(m_deltas, i, gsl_vector_get(m_deltas, i) - epsilon * gsl_vector_get(m_p, i));
-      }
-    }
-  }
 }
 
 void Layer::reset_deltas() {

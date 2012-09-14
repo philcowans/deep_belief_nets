@@ -12,7 +12,6 @@ public:
   double get_bias(int i);
   
   void reset_deltas();
-  void update_biases(double epsilon, bool positive, bool stochastic);
   void commit_deltas();
   void sample(gsl_rng *rng);
   void set_state(const gsl_vector *state);
@@ -22,10 +21,10 @@ public:
   gsl_vector *m_state;
   gsl_vector *m_p;
   gsl_vector *m_biases;
+  gsl_vector *m_deltas;
 
 private:
   int m_size;
-  gsl_vector *m_deltas;
 };
 
 #endif
