@@ -11,20 +11,10 @@ Connection::Connection(Layer *below, Layer *above) {
   m_weights = new double[m_num_above * m_num_below];
   m_deltas = new double[m_num_above * m_num_below];
   memset(m_weights, 0, m_num_above * m_num_below * sizeof(double));
-
-  // Scratch space for training
-  m_observed = new bool[m_num_below];
-  m_hidden = new bool[m_num_above];
-  m_p_observed = new double[m_num_below];
-  m_p_hidden = new double[m_num_above];
 }
 
 Connection::~Connection() {
   delete[] m_weights;
-  delete[] m_observed;
-  delete[] m_hidden;
-  delete[] m_p_observed;
-  delete[] m_p_hidden;
 }
 
 double Connection::get_weight(int i, int j) {
@@ -69,17 +59,18 @@ void Connection::find_probs_downwards(double *p_below, int n_below, bool *above,
   }
 }
 
-void Connection::sample(gsl_rng *rng, bool *target, double *p, int size) {
-  for(int i = 0; i < size; ++i) {
-    target[i] = (gsl_rng_uniform(rng) < p[i]);
-  }
+void Connection::propagate_observation(gsl_rng *rng) {
+  find_probs_upwards(m_above->m_p, m_num_above, m_below->m_state, m_num_below, this, m_above);
+  m_above->sample(rng);
 }
 
-void Connection::perform_update_step(gsl_rng *rng, bool *input_data) {
+void Connection::propagate_hidden(gsl_rng *rng) {
+  find_probs_downwards(m_below->m_p, m_num_below, m_above->m_state, m_num_above, this, m_below);
+  m_below->sample(rng);
+}
 
-  for(int i = 0; i < m_num_below; ++i) {
-    m_observed[i] = input_data[i];
-  }
+void Connection::perform_update_step(gsl_rng *rng) {
+  // Assume that we already have suitable input data in place at this stage
 
   double epsilon = 0.001;
 
@@ -87,53 +78,46 @@ void Connection::perform_update_step(gsl_rng *rng, bool *input_data) {
   m_below->reset_deltas();
   m_above->reset_deltas();
   
-  find_probs_upwards(m_p_hidden, m_num_above, m_observed, m_num_below, this, m_above); // Passing this here seems bad
-  sample(rng, m_hidden, m_p_hidden, m_num_above);
+  find_probs_upwards(m_above->m_p, m_num_above, m_below->m_state, m_num_below, this, m_above); // Passing this here seems bad
+  m_above->sample(rng);
     
   for(int i = 0; i < m_num_above; ++i) {
     for(int j = 0; j < m_num_below; ++j) {
-      if(m_observed[j] && m_hidden[i]) {
+      if(m_below->m_state[j] && m_above->m_state[i]) {
 	update_weights(i, j, epsilon);
       }
     }
   }
   
-  for(int i = 0; i < m_num_below; ++i) {
-    if(m_observed[i]) {
-      m_below->update_biases(i, epsilon);
-    }
-  }
+  m_below->update_biases(epsilon, true, true);
+  m_above->update_biases(epsilon, true, true);
   
-  for(int i = 0; i < m_num_above; ++i) {
-    if(m_hidden[i]) {
-      m_above->update_biases(i, epsilon);
-    }
-  }
-  
-  find_probs_downwards(m_p_observed, m_num_below, m_hidden, m_num_above, this, m_below);
-  sample(rng, m_observed, m_p_observed, m_num_below);
-  
-  find_probs_upwards(m_p_hidden, m_num_above, m_observed, m_num_below, this, m_above);
+  find_probs_downwards(m_below->m_p, m_num_below, m_above->m_state, m_num_above, this, m_below);
+  m_below->sample(rng);
+  find_probs_upwards(m_above->m_p, m_num_above, m_below->m_state, m_num_below, this, m_above);
   
   for(int i = 0; i < m_num_above; ++i) {
     for(int j = 0; j < m_num_below; ++j) {
-      if(m_observed[j]) {
-	update_weights(i, j, -epsilon * m_p_hidden[i]);
+      if(m_below->m_state[j]) {
+	update_weights(i, j, -epsilon * m_above->m_p[i]);
       }
     }
   }
-  
-  for(int i = 0; i < m_num_below; ++i) {
-    if(m_observed[i]) {
-      m_below->update_biases(i, -epsilon);
-    }
-  }
-  
-  for(int i = 0; i < m_num_above; ++i) {
-    m_above->update_biases(i, -epsilon * m_p_hidden[i]);
-  }
+
+  m_below->update_biases(epsilon, false, true);
+  m_above->update_biases(epsilon, false, false);
   
   commit_deltas();
   m_below->commit_deltas();
   m_above->commit_deltas();
+}
+
+void Connection::sample_layer(gsl_rng *rng, int num_iterations) {
+  // Assume that sensible values are already loaded into layer above's activity
+  for(int i = 0; i < num_iterations; ++i) {
+    find_probs_downwards(m_below->m_p, m_num_below, m_above->m_state, m_num_above, this, m_below);
+    m_below->sample(rng);
+    find_probs_upwards(m_above->m_p, m_num_above, m_below->m_state, m_num_below, this, m_above);
+    m_above->sample(rng);
+  }
 }

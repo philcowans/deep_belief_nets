@@ -13,7 +13,10 @@ public:
   void update_weights(int i, int j, double delta);
   void reset_deltas();
   void commit_deltas();
-  void perform_update_step(gsl_rng *rng, bool *input_data);
+  void perform_update_step(gsl_rng *rng);
+  void propagate_observation(gsl_rng *rng);
+  void propagate_hidden(gsl_rng *rng);
+  void sample_layer(gsl_rng *rng, int num_iterations);
 
 private:
   int m_num_above;
@@ -23,16 +26,8 @@ private:
   Layer *m_above;
   Layer *m_below;
 
-  bool *m_observed;
-  bool *m_hidden;
-  double *m_p_observed;
-  double *m_p_hidden;
-
-
   void find_probs_upwards(double *p_above, int n_above, bool *below, int n_below, Connection *connection, Layer *layer_above);
   void find_probs_downwards(double *p_below, int n_below, bool *above, int n_above, Connection *connection, Layer *layer_below);
-  void sample(gsl_rng *rng, bool *target, double *p, int size);
-
 };
 
 #endif

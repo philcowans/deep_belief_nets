@@ -14,7 +14,7 @@ public:
   Network(Monitor *monitor);
   ~Network();
   void train(gsl_rng *rng, Dataset *training_data, Schedule *schedule);
-  void sample_input(gsl_rng *rng, bool *outputs);
+  void sample_input(gsl_rng *rng);
   
 private:
   Monitor *m_monitor;
