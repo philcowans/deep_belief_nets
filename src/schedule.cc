@@ -12,13 +12,28 @@ bool Schedule::step() {
   if(m_step_index % 10000 == 0) {
     std::cout << "Completed " << m_step_index << " steps (time is " << time(NULL) << ")" << std::endl;
   }
-  return (m_step_index < 60000 * 30 * 3);
+  if(m_debug) {
+    return (m_step_index < 1000 * 3);
+  }
+  else {
+    return (m_step_index < 60000 * 30 * 3);
+  }
 }
 
 int Schedule::target_layer() {
-  return m_step_index / 60000 * 30;
+  if(m_debug) {
+    return m_step_index / 1000;
+  }
+  else {
+    return m_step_index / 60000 * 30;
+  }
 }
 
 int Schedule::active_image() {
-  return m_step_index % 60000;
+  if(m_debug) {
+    return 0;
+  }
+  else {
+    return m_step_index % 60000;
+  }
 }

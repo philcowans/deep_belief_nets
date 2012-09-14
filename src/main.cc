@@ -15,19 +15,23 @@ int main(int argc, char **argv) {
 
   MnistDataset dataset("data/train-images-idx3-ubyte", "data/train-labels-idx1-ubyte", fixed_image);
   Schedule s;
+  s.m_debug = false;
   n.train(rng, &dataset, &s);
 
-  bool sample[28*28];
-  n.sample_input(rng); //, sample);
-  // for(int i = 0; i < 28; ++i ) {
-  //   for(int j = 0; j < 28; ++j ) {
-  //     if(sample[i*28 + j])
-  // 	std::cout << "*";
-  //     else
-  // 	std::cout << ".";
-  //   }
-  //   std::cout << std::endl;
-  // }
+  n.sample_input(rng);
+  bool *sample = n.extract_input_states();
+
+  for(int i = 0; i < 28; ++i ) {
+    for(int j = 0; j < 28; ++j ) {
+      if(sample[i*28 + j])
+   	std::cout << "*";
+      else
+   	std::cout << ".";
+    }
+    std::cout << std::endl;
+  }
+
+  n.dump_states("final_state.tsv");
 
   gsl_rng_free(rng);
 }

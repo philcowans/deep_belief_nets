@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include <iostream>
+#include <fstream>
 
 Network::Network(Monitor *monitor) {
   m_monitor = monitor;
@@ -57,6 +58,27 @@ void Network::sample_input(gsl_rng *rng) {
   }
 
   // Something something display output
+}
+
+bool *Network::extract_input_states() {
+  return m_layers[0]->m_state;
+}
+
+void Network::dump_states(const char *filename) {
+  std::ofstream f(filename);
+  for(int i = 0; i < m_num_layers; ++i) {
+    for(int j = 0; j < m_layer_sizes[i]; ++j) {
+      f << "l\t" << i << "\t" << j << "\t" << m_layers[i]->get_bias(j) << std::endl;
+    }
+  }
+  for(int i = 0; i < m_num_layers - 1; ++i) {
+    for(int j = 0; j < m_layer_sizes[i+1]; ++j) {
+      for(int k = 0; k < m_layer_sizes[i]; ++k) {
+	f << "c\t" << i << "\t" << j << "\t" << k << "\t" << m_connections[i]->get_weight(j, k) << std::endl;
+      }
+    }
+  }
+  f.close();
 }
 
 void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n, Schedule *schedule) {

@@ -15,6 +15,8 @@ public:
   ~Network();
   void train(gsl_rng *rng, Dataset *training_data, Schedule *schedule);
   void sample_input(gsl_rng *rng);
+  bool *extract_input_states();
+  void dump_states(const char *filename);
   
 private:
   Monitor *m_monitor;
