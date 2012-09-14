@@ -1,0 +1,30 @@
+Deep Belief Nets
+================
+
+A C++ implementation of the Deep Belief Net training algorithm
+described in [1], with more detail available in [2]. There's also a
+Google tech talk covering the application [3].
+
+I also need to watch [4] for an update at some point :-)
+
+You'll need to grab the MNIST digit data from [5] and gunzip the files
+in a directory called 'data' at the project root.
+
+References
+----------
+
+[1] Hinton, G. E., Osindero, S. and Teh, Y., 
+A fast learning algorithm for deep belief nets.
+Neural Computation 18 (2006), pp 1527-1554.
+(http://www.cs.toronto.edu/~hinton/absps/ncfast.pdf)
+
+[2] Bengio, Y.,
+Learning deep architectures for AI
+Now Publishers (2009)
+(http://www.iro.umontreal.ca/~bengioy/papers/ftml_book.pdf)
+
+[3] http://www.youtube.com/watch?v=AyzOUbkUf3M
+
+[4] http://www.youtube.com/watch?v=VdIURAu1-aU
+
+[5] http://yann.lecun.com/exdb/mnist/
