@@ -60,7 +60,7 @@ void Network::sample_input(gsl_rng *rng) {
   // Something something display output
 }
 
-bool *Network::extract_input_states() {
+gsl_vector *Network::extract_input_states() {
   return m_layers[0]->m_state;
 }
 
@@ -83,12 +83,12 @@ void Network::dump_states(const char *filename) {
 
 void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n, Schedule *schedule) {
   int input_size = m_layers[0]->size();
-  bool *input_observations = new bool[input_size]; // TODO: Should be okay for dataset to own this rather than copying
+  gsl_vector *input_observations = gsl_vector_alloc(input_size); // TODO: Should be okay for dataset to own this rather than copying
   training_data->get_sample(rng, input_observations, schedule->active_image());
   m_layers[0]->set_state(input_observations);
   for(int i = 0; i < n; ++i) {
     m_connections[i]->propagate_observation(rng);
   }
   m_connections[n]->perform_update_step(rng);
-  delete[] input_observations;
+  gsl_vector_free(input_observations);
 }

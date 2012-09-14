@@ -66,8 +66,13 @@ bool MnistDataset::get_value(int i) {
   return false;
 }
 
-void MnistDataset::get_sample(gsl_rng *r, bool *sample, int example_id) {
+void MnistDataset::get_sample(gsl_rng *r, gsl_vector *sample, int example_id) {
   for(int i = 0; i< m_num_rows * m_num_cols; ++i) {
-    sample[i] = gsl_rng_uniform_int(r, 255) < m_image_data[example_id][i];
+    if(gsl_rng_uniform_int(r, 255) < m_image_data[example_id][i]) {
+      gsl_vector_set(sample, i, 1.0);
+    }
+    else {
+      gsl_vector_set(sample, i, 0.0);
+    }
   }
 }

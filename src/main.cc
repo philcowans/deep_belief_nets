@@ -2,6 +2,7 @@
 #include "monitor.h"
 #include "network.h"
 #include <iostream>
+#include <gsl/gsl_vector.h>
 
 int main(int argc, char **argv) {
   gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
@@ -19,11 +20,11 @@ int main(int argc, char **argv) {
   n.train(rng, &dataset, &s);
 
   n.sample_input(rng);
-  bool *sample = n.extract_input_states();
+  gsl_vector *sample = n.extract_input_states();
 
   for(int i = 0; i < 28; ++i ) {
     for(int j = 0; j < 28; ++j ) {
-      if(sample[i*28 + j])
+      if(gsl_vector_get(sample, i*28 + j) == 1.0)
    	std::cout << "*";
       else
    	std::cout << ".";

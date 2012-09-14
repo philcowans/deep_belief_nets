@@ -3,14 +3,15 @@
 
 #include "layer.h"
 
+#include <gsl/gsl_matrix.h>
 #include <gsl/gsl_rng.h>
 
 class Connection {
 public:
   Connection(Layer *below, Layer *above);
   ~Connection();
-  inline double get_weight(int i, int j);
-  inline void update_weights(int i, int j, double delta);
+  double get_weight(int i, int j);
+  void update_weights(int i, int j, double delta);
   void reset_deltas();
   void commit_deltas();
   void perform_update_step(gsl_rng *rng);
@@ -21,8 +22,10 @@ public:
 private:
   int m_num_above;
   int m_num_below;
-  double *m_weights;
-  double *m_deltas;
+  gsl_matrix *m_weights;
+  gsl_matrix *m_deltas;
+  gsl_vector *m_activation_above;
+  gsl_vector *m_activation_below;
   Layer *m_above;
   Layer *m_below;
 
