@@ -25,7 +25,7 @@ int Schedule::target_layer() {
     return m_step_index / 1000;
   }
   else {
-    return m_step_index / 60000 * 30;
+    return m_step_index / (60000 * 30);
   }
 }
 
