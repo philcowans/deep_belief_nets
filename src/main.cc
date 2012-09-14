@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
 
   MnistDataset dataset("data/train-images-idx3-ubyte", "data/train-labels-idx1-ubyte", fixed_image);
   Schedule s;
-  s.m_debug = false;
+  s.m_debug = true;
   n.train(rng, &dataset, &s);
 
   n.sample_input(rng);
@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
     std::cout << std::endl;
   }
 
-  n.dump_states("final_state.tsv");
+  //  n.dump_states("final_state.tsv");
 
   gsl_rng_free(rng);
 }
