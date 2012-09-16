@@ -13,14 +13,15 @@ Network::Network(Monitor *monitor) {
 
   m_layer_sizes[0] = 784;
   m_layer_sizes[1] = 500;
-  m_layer_sizes[2] = 500;
+  m_layer_sizes[2] = 510; // Special case
   m_layer_sizes[3] = 2000;
 
   m_layers = new Layer*[m_num_layers];
   m_connections = new Connection*[m_num_layers - 1];
 
   for(int i = 0; i < m_num_layers; ++i) {
-    m_layers[i] = new Layer(m_layer_sizes[i]);
+    bool labels = (i == 2);
+    m_layers[i] = new Layer(m_layer_sizes[i], labels);
   }
 
   for(int i = 0; i < m_num_layers - 1; ++i) {
@@ -61,7 +62,7 @@ void Network::sample_input(gsl_rng *rng) {
 }
 
 gsl_vector *Network::extract_input_states() {
-  return m_layers[0]->m_state;
+  return m_layers[0]->state(true);
 }
 
 void Network::dump_states(const char *filename) {
@@ -82,12 +83,15 @@ void Network::dump_states(const char *filename) {
 }
 
 void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n, Schedule *schedule) {
-  int input_size = m_layers[0]->size();
+  int input_size = m_layers[0]->size(false);
   gsl_vector *input_observations = gsl_vector_alloc(input_size); // TODO: Should be okay for dataset to own this rather than copying
   training_data->get_sample(rng, input_observations, schedule->active_image());
   m_layers[0]->set_state(input_observations);
   for(int i = 0; i < n; ++i) {
     m_connections[i]->propagate_observation(rng);
+  }
+  if(n == 2) {
+    m_layers[2]->set_label(training_data->get_label(schedule->active_image()));
   }
   m_connections[n]->perform_update_step(rng);
   gsl_vector_free(input_observations);

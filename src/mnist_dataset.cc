@@ -76,3 +76,7 @@ void MnistDataset::get_sample(gsl_rng *r, gsl_vector *sample, int example_id) {
     }
   }
 }
+
+int MnistDataset::get_label(int example_id) {
+  return m_labels[example_id];
+}

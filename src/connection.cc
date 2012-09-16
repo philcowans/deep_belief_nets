@@ -7,8 +7,8 @@
 Connection::Connection(Layer *below, Layer *above) {
   m_above = above;
   m_below = below;
-  m_num_above = above->size();
-  m_num_below = below->size();
+  m_num_above = above->size(false);
+  m_num_below = below->size(true);
   m_weights = gsl_matrix_alloc(m_num_above, m_num_below);
   m_deltas = gsl_matrix_alloc(m_num_above, m_num_below);
   m_activation_above = gsl_vector_alloc(m_num_above);
@@ -39,18 +39,18 @@ void Connection::commit_deltas() {
 }
 
 void Connection::find_probs_upwards() {
-  gsl_vector_memcpy(m_activation_above, m_above->m_biases);
-  gsl_blas_dgemv(CblasNoTrans, 1.0, m_weights, m_below->m_state, 1.0, m_activation_above);
+  gsl_vector_memcpy(m_activation_above, m_above->biases(false));
+  gsl_blas_dgemv(CblasNoTrans, 1.0, m_weights, m_below->state(true), 1.0, m_activation_above);
   for(int i = 0; i < m_num_above; ++i) {
-    gsl_vector_set(m_above->m_p, i, 1.0 / (1.0 + exp(-gsl_vector_get(m_activation_above, i))));
+    gsl_vector_set(m_above->p(false), i, 1.0 / (1.0 + exp(-gsl_vector_get(m_activation_above, i))));
   }
 }
 
 void Connection::find_probs_downwards() {
-  gsl_vector_memcpy(m_activation_below, m_below->m_biases);
-  gsl_blas_dgemv(CblasTrans, 1.0, m_weights, m_above->m_state, 1.0, m_activation_below);
+  gsl_vector_memcpy(m_activation_below, m_below->biases(true));
+  gsl_blas_dgemv(CblasTrans, 1.0, m_weights, m_above->state(false), 1.0, m_activation_below);
   for(int i = 0; i < m_num_below; ++i) {
-    gsl_vector_set(m_below->m_p, i, 1.0 / (1.0 + exp(-gsl_vector_get(m_activation_below, i))));
+    gsl_vector_set(m_below->p(true), i, 1.0 / (1.0 + exp(-gsl_vector_get(m_activation_below, i))));
   }
 }
 
@@ -77,18 +77,18 @@ void Connection::perform_update_step(gsl_rng *rng) {
   
   propagate_observation(rng);
 
-  gsl_blas_dger (epsilon, m_above->m_state, m_below->m_state, m_deltas);
-  gsl_blas_daxpy(epsilon, m_below->m_state,                   m_below->m_deltas);
-  gsl_blas_daxpy(epsilon, m_above->m_state,                   m_above-> m_deltas);
+  gsl_blas_dger (epsilon, m_above->state(false), m_below->state(true), m_deltas);
+  gsl_blas_daxpy(epsilon, m_below->state(true),                        m_below->deltas(true));
+  gsl_blas_daxpy(epsilon, m_above->state(false),                       m_above->deltas(false));
 
   // Negative phase
 
   propagate_hidden(rng);
   find_probs_upwards();
   
-  gsl_blas_dger (-epsilon, m_above->m_p, m_below->m_state, m_deltas); 
-  gsl_blas_daxpy(-epsilon, m_below->m_state,               m_below->m_deltas);
-  gsl_blas_daxpy(-epsilon, m_above->m_p,                   m_above-> m_deltas);
+  gsl_blas_dger (-epsilon, m_above->p(false), m_below->state(true), m_deltas); 
+  gsl_blas_daxpy(-epsilon, m_below->state(true),                    m_below->deltas(true));
+  gsl_blas_daxpy(-epsilon, m_above->p(false),                       m_above->deltas(false));
   
   // Then commit the update
 
@@ -100,7 +100,7 @@ void Connection::perform_update_step(gsl_rng *rng) {
 void Connection::sample_layer(gsl_rng *rng, int num_iterations) {
   // Assume that sensible values are already loaded into layer above's activity
   for(int i = 0; i < num_iterations; ++i) {
-    propagate_hidden();
-    propagate_observed();
+    propagate_hidden(rng);
+    propagate_observation(rng);
   }
 }

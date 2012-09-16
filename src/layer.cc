@@ -4,8 +4,9 @@
 #include <cstring>
 #include <gsl/gsl_blas.h>
 
-Layer::Layer(int size) {
+Layer::Layer(int size, bool labels) {
   m_size = size;
+  m_labels = labels;
   m_biases = gsl_vector_calloc(m_size);
   m_deltas = gsl_vector_alloc(m_size);
   m_state = gsl_vector_alloc(m_size);
@@ -19,12 +20,53 @@ Layer::~Layer() {
   gsl_vector_free(m_p);
 }
 
-int Layer::size() {
-  return m_size;
+int Layer::size(bool ext) {
+  if(ext || !m_labels) {
+    return m_size;
+  }
+  else {
+    return m_size - 10;
+  }
 }
 
 double Layer::get_bias(int i) {
   return gsl_vector_get(m_biases, i);
+}
+
+gsl_vector *Layer::state(bool ext) {
+  if(ext || !m_labels) {
+    return m_state;
+  }
+  else {
+    return &(gsl_vector_subvector(m_state, 0, m_size - 10).vector);
+  }
+}
+
+gsl_vector *Layer::p(bool ext) {
+  if(ext || !m_labels) {
+    return m_p;
+  }
+  else {
+    return &(gsl_vector_subvector(m_p, 0, m_size - 10).vector);
+  }
+}
+
+gsl_vector *Layer::biases(bool ext) {
+  if(ext || !m_labels) {
+    return m_biases;
+  }
+  else {
+    return &(gsl_vector_subvector(m_biases, 0, m_size - 10).vector);
+  }
+}
+
+gsl_vector *Layer::deltas(bool ext) {
+  if(ext || !m_labels) {
+    return m_deltas;
+  }
+  else {
+    return &(gsl_vector_subvector(m_deltas, 0, m_size - 10).vector);
+  }
 }
 
 void Layer::reset_deltas() {
@@ -52,4 +94,13 @@ void Layer::activate_from_bias() {
   }
 }
   
-  
+void Layer::set_label(int label) {
+  for(int i = 0; i < 10; ++i) {
+    if(label == i) {
+      gsl_vector_set(m_state, m_size - 10 + i, 1.0);
+    }
+    else {
+      gsl_vector_set(m_state, m_size - 10 + i, 0.0);
+    }
+  }
+}  
