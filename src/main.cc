@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
   s.m_debug = false;
   n.train(rng, &dataset, &s);
 
-  n.sample_input(rng);
+  n.sample_input(rng, dataset.get_label(0));
   gsl_vector *sample = n.extract_input_states();
 
   for(int i = 0; i < 28; ++i ) {

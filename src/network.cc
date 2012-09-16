@@ -51,9 +51,9 @@ void Network::train(gsl_rng *rng, Dataset *training_data, Schedule *schedule) {
   }
 }
 
-void Network::sample_input(gsl_rng *rng) {
+void Network::sample_input(gsl_rng *rng, int label) {
   m_layers[m_num_layers - 1]->activate_from_bias();
-  m_connections[m_num_layers - 2]->sample_layer(rng, 1000);
+  m_connections[m_num_layers - 2]->sample_layer(rng, 1000, label);
   for(int i = m_num_layers - 3; i >= 0; --i) {
     m_connections[i]->propagate_hidden(rng);
   }

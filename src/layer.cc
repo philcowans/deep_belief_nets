@@ -82,8 +82,13 @@ void Layer::commit_deltas() {
   gsl_vector_add(m_biases, m_deltas);
 }
 
-void Layer::sample(gsl_rng *rng) {
-  for(int i = 0; i < m_size; ++i) {
+void Layer::sample(gsl_rng *rng, bool ext) {
+  int max_idx;
+  if(ext)
+    max_idx = m_size;
+  else
+    max_idx = m_size - 10;
+  for(int i = 0; i < max_idx; ++i) {
     gsl_vector_set(m_state, i, gsl_rng_uniform(rng) < gsl_vector_get(m_p, i));
   }
 }

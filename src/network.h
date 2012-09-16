@@ -15,7 +15,7 @@ public:
   Network(Monitor *monitor);
   ~Network();
   void train(gsl_rng *rng, Dataset *training_data, Schedule *schedule);
-  void sample_input(gsl_rng *rng);
+  void sample_input(gsl_rng *rng, int label);
   gsl_vector *extract_input_states();
   void dump_states(const char *filename);
   

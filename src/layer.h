@@ -13,7 +13,7 @@ public:
   
   void reset_deltas();
   void commit_deltas();
-  void sample(gsl_rng *rng);
+  void sample(gsl_rng *rng, bool ext = true);
   void set_state(const gsl_vector *state);
   void activate_from_bias();
   void set_label(int label);

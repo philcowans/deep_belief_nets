@@ -59,9 +59,9 @@ void Connection::propagate_observation(gsl_rng *rng) {
   m_above->sample(rng);
 }
 
-void Connection::propagate_hidden(gsl_rng *rng) {
+void Connection::propagate_hidden(gsl_rng *rng, bool ext) {
   find_probs_downwards();
-  m_below->sample(rng);
+  m_below->sample(rng, ext);
 }
 
 void Connection::perform_update_step(gsl_rng *rng) {
@@ -97,10 +97,11 @@ void Connection::perform_update_step(gsl_rng *rng) {
   m_above->commit_deltas();
 }
 
-void Connection::sample_layer(gsl_rng *rng, int num_iterations) {
+void Connection::sample_layer(gsl_rng *rng, int num_iterations, int label) {
   // Assume that sensible values are already loaded into layer above's activity
+  m_below->set_label(label);
   for(int i = 0; i < num_iterations; ++i) {
-    propagate_hidden(rng);
+    propagate_hidden(rng, false);
     propagate_observation(rng);
   }
 }
