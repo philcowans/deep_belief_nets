@@ -11,6 +11,10 @@ Layer::Layer(int size, bool labels) {
   m_deltas = gsl_vector_alloc(m_size);
   m_state = gsl_vector_alloc(m_size);
   m_p = gsl_vector_alloc(m_size);
+  m_biases_view = gsl_vector_subvector(m_biases, 0, m_size - 10);
+  m_deltas_view = gsl_vector_subvector(m_deltas, 0, m_size - 10);
+  m_state_view = gsl_vector_subvector(m_state, 0, m_size - 10);
+  m_p_view = gsl_vector_subvector(m_p, 0, m_size - 10);
 }
 
 Layer::~Layer() {
@@ -38,7 +42,7 @@ gsl_vector *Layer::state(bool ext) {
     return m_state;
   }
   else {
-    return &(gsl_vector_subvector(m_state, 0, m_size - 10).vector);
+    return &(m_state_view.vector);
   }
 }
 
@@ -47,7 +51,7 @@ gsl_vector *Layer::p(bool ext) {
     return m_p;
   }
   else {
-    return &(gsl_vector_subvector(m_p, 0, m_size - 10).vector);
+    return &(m_p_view.vector);
   }
 }
 
@@ -56,7 +60,7 @@ gsl_vector *Layer::biases(bool ext) {
     return m_biases;
   }
   else {
-    return &(gsl_vector_subvector(m_biases, 0, m_size - 10).vector);
+    return &(m_biases_view.vector);
   }
 }
 
@@ -65,7 +69,7 @@ gsl_vector *Layer::deltas(bool ext) {
     return m_deltas;
   }
   else {
-    return &(gsl_vector_subvector(m_deltas, 0, m_size - 10).vector);
+    return &(m_deltas_view.vector);
   }
 }
 

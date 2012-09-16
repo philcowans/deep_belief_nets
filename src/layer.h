@@ -31,7 +31,10 @@ private:
   gsl_vector *m_p;
   gsl_vector *m_biases;
   gsl_vector *m_deltas;
-
+  gsl_vector_view m_state_view;
+  gsl_vector_view m_p_view;
+  gsl_vector_view m_biases_view;
+  gsl_vector_view m_deltas_view;
 };
 
 #endif
