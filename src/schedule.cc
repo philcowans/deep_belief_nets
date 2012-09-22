@@ -16,7 +16,7 @@ bool Schedule::step() {
     return (m_step_index < 1000 * 3);
   }
   else {
-    return (m_step_index < 60000 * 30 * 3);
+    return (m_step_index < 100 * 300 * 3);
   }
 }
 
@@ -25,7 +25,7 @@ int Schedule::target_layer() {
     return m_step_index / 1000;
   }
   else {
-    return m_step_index / (60000 * 30);
+    return m_step_index / (100 * 300);
   }
 }
 
@@ -34,6 +34,6 @@ int Schedule::active_image() {
     return 0;
   }
   else {
-    return m_step_index % 60000;
+    return m_step_index % 100; //60000;
   }
 }

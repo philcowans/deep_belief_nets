@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstring>
 #include <gsl/gsl_blas.h>
+#include <iostream>
 
 Layer::Layer(int size, bool labels) {
   m_size = size;
@@ -11,10 +12,12 @@ Layer::Layer(int size, bool labels) {
   m_deltas = gsl_vector_alloc(m_size);
   m_state = gsl_vector_alloc(m_size);
   m_p = gsl_vector_alloc(m_size);
+  m_activation = gsl_vector_alloc(m_size);
   m_biases_view = gsl_vector_subvector(m_biases, 0, m_size - 10);
   m_deltas_view = gsl_vector_subvector(m_deltas, 0, m_size - 10);
   m_state_view = gsl_vector_subvector(m_state, 0, m_size - 10);
   m_p_view = gsl_vector_subvector(m_p, 0, m_size - 10);
+  m_activation_view = gsl_vector_subvector(m_activation, 0, m_size - 10);
 }
 
 Layer::~Layer() {
@@ -22,6 +25,7 @@ Layer::~Layer() {
   gsl_vector_free(m_deltas);
   gsl_vector_free(m_state);
   gsl_vector_free(m_p);
+  gsl_vector_free(m_activation);
 }
 
 int Layer::size(bool ext) {
@@ -43,6 +47,15 @@ gsl_vector *Layer::state(bool ext) {
   }
   else {
     return &(m_state_view.vector);
+  }
+}
+
+gsl_vector *Layer::activation(bool ext) {
+  if(ext || !m_labels) {
+    return m_activation;
+  }
+  else {
+    return &(m_activation_view.vector);
   }
 }
 
@@ -83,11 +96,33 @@ void Layer::commit_deltas() {
 }
 
 void Layer::sample(gsl_rng *rng, bool ext) {
+  if(m_labels && ext) {
+    double probs[10];
+    double norm = 0.0;
+    for(int i = 0; i < 10; ++i) {
+      probs[i] = exp(gsl_vector_get(m_activation, m_size - 10 + i));
+      // std::cout << i << ": " << probs[i] << std::endl;
+      norm += probs[i];
+      gsl_vector_set(m_state, m_size - 10 + i, 0.0);
+    }
+    double target = gsl_rng_uniform(rng);
+    int n = 0;
+    double cumulative = probs[0] / norm;
+    while((cumulative < target) && (n < 9)) {
+      ++n;
+      cumulative += probs[n] / norm;
+    }
+    // std::cout << "n = " << n << std::endl;
+    gsl_vector_set(m_state, m_size - 10 + n, 1.0);
+  }
+
   int max_idx;
-  if(ext)
-    max_idx = m_size;
-  else
+
+  if(m_labels)
     max_idx = m_size - 10;
+  else
+    max_idx = m_size;
+
   for(int i = 0; i < max_idx; ++i) {
     gsl_vector_set(m_state, i, gsl_rng_uniform(rng) < gsl_vector_get(m_p, i));
   }

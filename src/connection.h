@@ -24,8 +24,6 @@ private:
   int m_num_below;
   gsl_matrix *m_weights;
   gsl_matrix *m_deltas;
-  gsl_vector *m_activation_above;
-  gsl_vector *m_activation_below;
   Layer *m_above;
   Layer *m_below;
 

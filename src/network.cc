@@ -47,6 +47,7 @@ void Network::train(gsl_rng *rng, Dataset *training_data, Schedule *schedule) {
   m_monitor->log_event("Starting network training");
   schedule->reset();
   while(schedule->step()) {
+    //    std::cout << "layer " << schedule->target_layer() << std::endl;
     greedily_train_layer(rng, training_data, schedule->target_layer(), schedule);
   }
 }
@@ -75,7 +76,9 @@ void Network::dump_states(const char *filename) {
   for(int i = 0; i < m_num_layers - 1; ++i) {
     for(int j = 0; j < m_layer_sizes[i+1]; ++j) {
       for(int k = 0; k < m_layer_sizes[i]; ++k) {
-	f << "c\t" << i << "\t" << j << "\t" << k << "\t" << m_connections[i]->get_weight(j, k) << std::endl;
+	if((i != 1) || (j < 500)) {
+	  f << "c\t" << i << "\t" << j << "\t" << k << "\t" << m_connections[i]->get_weight(j, k) << std::endl;
+	}
       }
     }
   }

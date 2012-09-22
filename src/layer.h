@@ -21,18 +21,23 @@ public:
   // Privatise these at some point
   gsl_vector *state(bool ext);
   gsl_vector *p(bool ext);
+  gsl_vector *activation(bool ext);
   gsl_vector *biases(bool ext);
   gsl_vector *deltas(bool ext);
 
-private:
   bool m_labels;
+
+
+private:
   int m_size;
   gsl_vector *m_state;
   gsl_vector *m_p;
+  gsl_vector *m_activation;
   gsl_vector *m_biases;
   gsl_vector *m_deltas;
   gsl_vector_view m_state_view;
   gsl_vector_view m_p_view;
+  gsl_vector_view m_activation_view;
   gsl_vector_view m_biases_view;
   gsl_vector_view m_deltas_view;
 };

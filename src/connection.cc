@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstring>
+#include <iostream>
 #include <gsl/gsl_blas.h>
 
 Connection::Connection(Layer *below, Layer *above) {
@@ -11,15 +12,11 @@ Connection::Connection(Layer *below, Layer *above) {
   m_num_below = below->size(true);
   m_weights = gsl_matrix_alloc(m_num_above, m_num_below);
   m_deltas = gsl_matrix_alloc(m_num_above, m_num_below);
-  m_activation_above = gsl_vector_alloc(m_num_above);
-  m_activation_below = gsl_vector_alloc(m_num_below);
 }
 
 Connection::~Connection() {
   gsl_matrix_free(m_weights);
   gsl_matrix_free(m_deltas);
-  gsl_vector_free(m_activation_below);
-  gsl_vector_free(m_activation_above);
 }
 
 double Connection::get_weight(int i, int j) {
@@ -39,18 +36,18 @@ void Connection::commit_deltas() {
 }
 
 void Connection::find_probs_upwards() {
-  gsl_vector_memcpy(m_activation_above, m_above->biases(false));
-  gsl_blas_dgemv(CblasNoTrans, 1.0, m_weights, m_below->state(true), 1.0, m_activation_above);
+  gsl_vector_memcpy(m_above->activation(false), m_above->biases(false));
+  gsl_blas_dgemv(CblasNoTrans, 1.0, m_weights, m_below->state(true), 1.0, m_above->activation(false));
   for(int i = 0; i < m_num_above; ++i) {
-    gsl_vector_set(m_above->p(false), i, 1.0 / (1.0 + exp(-gsl_vector_get(m_activation_above, i))));
+    gsl_vector_set(m_above->p(false), i, 1.0 / (1.0 + exp(-gsl_vector_get(m_above->activation(false), i))));
   }
 }
 
 void Connection::find_probs_downwards() {
-  gsl_vector_memcpy(m_activation_below, m_below->biases(true));
-  gsl_blas_dgemv(CblasTrans, 1.0, m_weights, m_above->state(false), 1.0, m_activation_below);
+  gsl_vector_memcpy(m_below->activation(true), m_below->biases(true));
+  gsl_blas_dgemv(CblasTrans, 1.0, m_weights, m_above->state(false), 1.0, m_below->activation(true));
   for(int i = 0; i < m_num_below; ++i) {
-    gsl_vector_set(m_below->p(true), i, 1.0 / (1.0 + exp(-gsl_vector_get(m_activation_below, i))));
+    gsl_vector_set(m_below->p(true), i, 1.0 / (1.0 + exp(-gsl_vector_get(m_below->activation(true), i))));
   }
 }
 
@@ -65,9 +62,14 @@ void Connection::propagate_hidden(gsl_rng *rng, bool ext) {
 }
 
 void Connection::perform_update_step(gsl_rng *rng) {
+//   std::cout << "t: ";
+//   for(int i = 0; i < m_num_below; ++i) {
+//     std::cout << gsl_vector_get(m_below->state(true), i) << " ";
+//   }
+//   std::cout << std::endl;
+  
   // Assume that we already have suitable input data in place at this stage
-
-  double epsilon = 0.001;
+  double epsilon = 1.0;;
 
   reset_deltas();
   m_below->reset_deltas();
@@ -89,6 +91,7 @@ void Connection::perform_update_step(gsl_rng *rng) {
   gsl_blas_dger (-epsilon, m_above->p(false), m_below->state(true), m_deltas); 
   gsl_blas_daxpy(-epsilon, m_below->state(true),                    m_below->deltas(true));
   gsl_blas_daxpy(-epsilon, m_above->p(false),                       m_above->deltas(false));
+
   
   // Then commit the update
 
@@ -99,9 +102,16 @@ void Connection::perform_update_step(gsl_rng *rng) {
 
 void Connection::sample_layer(gsl_rng *rng, int num_iterations, int label) {
   // Assume that sensible values are already loaded into layer above's activity
+  //  gsl_vector_set_zero(m_below->state(true));
+  m_below->activate_from_bias();
   m_below->set_label(label);
+  propagate_observation(rng);
   for(int i = 0; i < num_iterations; ++i) {
     propagate_hidden(rng, false);
     propagate_observation(rng);
+    //  for(int j = 0; j < m_num_above; ++j) {
+    // std::cout << gsl_vector_get(m_above->activation(true), j) << " ";
+    // }
+    //std::cout << std::endl;
   }
 }
