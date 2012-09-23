@@ -51,9 +51,14 @@ void Connection::find_probs_downwards() {
   }
 }
 
-void Connection::propagate_observation(gsl_rng *rng) {
+void Connection::propagate_observation(gsl_rng *rng, bool mean_field) {
   find_probs_upwards();
-  m_above->sample(rng);
+  if(mean_field) {
+    m_above->transfer();
+  }
+  else {
+    m_above->sample(rng);
+  }
 }
 
 void Connection::propagate_hidden(gsl_rng *rng, bool ext) {
@@ -69,7 +74,7 @@ void Connection::perform_update_step(gsl_rng *rng) {
 //   std::cout << std::endl;
   
   // Assume that we already have suitable input data in place at this stage
-  double epsilon = 1.0;;
+  double epsilon = 1.0;
 
   reset_deltas();
   m_below->reset_deltas();

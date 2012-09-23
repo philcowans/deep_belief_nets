@@ -95,6 +95,10 @@ void Layer::commit_deltas() {
   gsl_vector_add(m_biases, m_deltas);
 }
 
+void Layer::transfer() {
+  gsl_vector_memcpy(m_state, m_p);
+}
+
 void Layer::sample(gsl_rng *rng, bool ext) {
   if(m_labels && ext) {
     double probs[10];

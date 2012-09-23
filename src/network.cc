@@ -7,6 +7,7 @@
 #include <fstream>
 
 Network::Network(Monitor *monitor) {
+  m_mean_field = true;
   m_monitor = monitor;
   m_num_layers = 4;
   m_layer_sizes = new int[m_num_layers];
@@ -88,10 +89,15 @@ void Network::dump_states(const char *filename) {
 void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n, Schedule *schedule) {
   int input_size = m_layers[0]->size(false);
   gsl_vector *input_observations = gsl_vector_alloc(input_size); // TODO: Should be okay for dataset to own this rather than copying
-  training_data->get_sample(rng, input_observations, schedule->active_image());
+  if(m_mean_field) {
+    training_data->get_sample(rng, input_observations, schedule->active_image());
+  } 
+  else {
+    training_data->get_state(input_observations, schedule->active_image());
+  }
   m_layers[0]->set_state(input_observations);
   for(int i = 0; i < n; ++i) {
-    m_connections[i]->propagate_observation(rng);
+    m_connections[i]->propagate_observation(rng, m_mean_field);
   }
   if(n == 2) {
     m_layers[2]->set_label(training_data->get_label(schedule->active_image()));

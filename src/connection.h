@@ -15,7 +15,7 @@ public:
   void reset_deltas();
   void commit_deltas();
   void perform_update_step(gsl_rng *rng);
-  void propagate_observation(gsl_rng *rng);
+  void propagate_observation(gsl_rng *rng, bool mean_field = false);
   void propagate_hidden(gsl_rng *rng, bool ext = true);
   void sample_layer(gsl_rng *rng, int num_iterations, int label);
 

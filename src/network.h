@@ -25,6 +25,7 @@ private:
   int *m_layer_sizes;
   Layer **m_layers;
   Connection **m_connections;
+  bool m_mean_field;
 
   void greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n, Schedule *schedule);
   void transform_dataset_for_layer(gsl_rng *rng, bool *input, bool *s, int n);

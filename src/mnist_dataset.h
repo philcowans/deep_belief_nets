@@ -11,6 +11,7 @@ public:
   ~MnistDataset();
   virtual bool get_value(int i);
   virtual void get_sample(gsl_rng *r, gsl_vector *sample, int example_id);
+  virtual void get_state(gsl_vector *sample, int example_id);
   virtual int get_label(int example_id);
   
 private:
