@@ -18,6 +18,7 @@ public:
   void sample_input(gsl_rng *rng, int label);
   gsl_vector *extract_input_states();
   void dump_states(const char *filename);
+  void load_states(const char *filename);
   
 private:
   Monitor *m_monitor;

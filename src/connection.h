@@ -11,6 +11,7 @@ public:
   Connection(Layer *below, Layer *above);
   ~Connection();
   double get_weight(int i, int j);
+  void set_weight(int i, int j, double v);
   void update_weights(int i, int j, double delta);
   void reset_deltas();
   void commit_deltas();

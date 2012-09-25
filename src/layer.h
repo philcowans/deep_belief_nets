@@ -10,6 +10,7 @@ public:
   ~Layer();
   int size(bool ext);
   double get_bias(int i);
+  void set_bias(int i, double v);
   
   void reset_deltas();
   void commit_deltas();

@@ -23,6 +23,10 @@ double Connection::get_weight(int i, int j) {
   return gsl_matrix_get(m_weights, i, j);
 }
 
+void Connection::set_weight(int i, int j, double v) {
+  gsl_matrix_set(m_weights, i, j, v);
+}
+
 void Connection::update_weights(int i, int j, double delta) {
   gsl_matrix_set(m_deltas, i, j, gsl_matrix_get(m_deltas, i, j) + delta);
 }
@@ -53,9 +57,9 @@ void Connection::find_probs_downwards() {
 
 void Connection::propagate_observation(gsl_rng *rng, bool mean_field) {
   find_probs_upwards();
-  if(mean_field) {
+ if(mean_field) {
     m_above->transfer();
-  }
+ }
   else {
     m_above->sample(rng);
   }
@@ -109,13 +113,14 @@ void Connection::sample_layer(gsl_rng *rng, int num_iterations, int label) {
   // Assume that sensible values are already loaded into layer above's activity
   //  gsl_vector_set_zero(m_below->state(true));
   m_below->activate_from_bias();
+  m_below->sample(rng, false);
   m_below->set_label(label);
   propagate_observation(rng);
   for(int i = 0; i < num_iterations; ++i) {
     propagate_hidden(rng, false);
     propagate_observation(rng);
-    //  for(int j = 0; j < m_num_above; ++j) {
-    // std::cout << gsl_vector_get(m_above->activation(true), j) << " ";
+    //    for(int j = 0; j < m_num_below; ++j) {
+    //  std::cout << gsl_vector_get(m_below->state(true), j) << " ";
     // }
     //std::cout << std::endl;
   }

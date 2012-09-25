@@ -41,6 +41,10 @@ double Layer::get_bias(int i) {
   return gsl_vector_get(m_biases, i);
 }
 
+void Layer::set_bias(int i, double v) {
+  gsl_vector_set(m_biases, i, v);
+}
+
 gsl_vector *Layer::state(bool ext) {
   if(ext || !m_labels) {
     return m_state;
@@ -139,6 +143,7 @@ void Layer::set_state(const gsl_vector *state) {
 void Layer::activate_from_bias() {
   for(int i = 0; i < m_size; ++i) {
     gsl_vector_set(m_p, i, 1.0 / (1.0 + exp(-gsl_vector_get(m_biases, i))));
+    //    std::cout << gsl_vector_get(m_p, i) << std::endl;
   }
 }
   
