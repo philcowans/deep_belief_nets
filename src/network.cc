@@ -63,6 +63,14 @@ void Network::sample_input(gsl_rng *rng, int label) {
   // Something something display output
 }
 
+int Network::classify(gsl_vector *observations) {
+  m_layers[0]->set_state(observations);
+  for(int i = 0; i < 2; ++i) {
+    m_connections[i]->propagate_observation(NULL, m_mean_field);
+  }
+  return m_connections[m_num_layers - 2]->find_label();
+}
+
 gsl_vector *Network::extract_input_states() {
   return m_layers[0]->state(true);
 }
@@ -122,10 +130,10 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n, 
   int input_size = m_layers[0]->size(false);
   gsl_vector *input_observations = gsl_vector_alloc(input_size); // TODO: Should be okay for dataset to own this rather than copying
   if(m_mean_field) {
-    training_data->get_sample(rng, input_observations, schedule->active_image());
+    training_data->get_state(input_observations, schedule->active_image());
   } 
   else {
-    training_data->get_state(input_observations, schedule->active_image());
+    training_data->get_sample(rng, input_observations, schedule->active_image());
   }
   m_layers[0]->set_state(input_observations);
   for(int i = 0; i < n; ++i) {

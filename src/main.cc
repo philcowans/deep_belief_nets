@@ -3,7 +3,7 @@
 #include "network.h"
 #include <iostream>
 #include <gsl/gsl_vector.h>
-#include <gd.h>
+//#include <gd.h>
 
 int main(int argc, char **argv) {
   gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
@@ -21,39 +21,47 @@ int main(int argc, char **argv) {
   // n.train(rng, &dataset, &s);
   n.load_states("final_state_0.1.tsv");
 
-
-  gdImagePtr img;
-  int black;
-  int white;
-  img = gdImageCreate(280*2, 280*2);
-  black = gdImageColorAllocate(img, 0, 0, 0);  
-  white = gdImageColorAllocate(img, 255, 255, 255);  
-
-  for(int ni = 0; ni < 10; ++ni) {
-    for(int nj = 0; nj < 10; ++nj) {
-      std::cout << "Label: " << ni << std::endl;
-      n.sample_input(rng, ni);
-      gsl_vector *sample = n.extract_input_states();
-      
-      for(int i = 0; i < 28; ++i ) {
-	for(int j = 0; j < 28; ++j ) {
-	  int y = 2 * (ni * 28 + i);
-	  int x = 2 * (nj * 28 + j);
-	  if(gsl_vector_get(sample, i*28 + j) == 1.0)
-	    gdImageRectangle(img, x, y, x+1, y+1, black);
-	  else
-	    gdImageRectangle(img, x, y, x+1, y+1, white);
-	}
-      }
-    }
+  MnistDataset test_dataset("", "", false);
+  gsl_vector *input_observations = gsl_vector_alloc(784); // TODO: Should be okay for dataset to own this rather than copying
+  for(int i = 0; i < 10000; ++i) {
+    test_dataset.get_state(input_observations, i);
+    int cl = n.classify(input_observations);
+    std::cout << i << "\t" << test_dataset.get_label(i) << "\t" << cl << std::endl;
   }
+  gsl_vector_free(input_observations);
 
-  FILE *pngout;
-  pngout = fopen("test.png", "wb");
+  // gdImagePtr img;
+  // int black;
+  // int white;
+  // img = gdImageCreate(280*2, 280*2);
+  // black = gdImageColorAllocate(img, 0, 0, 0);  
+  // white = gdImageColorAllocate(img, 255, 255, 255);  
 
-  gdImagePng(img, pngout);
-  fclose(pngout);
-  gdImageDestroy(img);
+  // for(int ni = 0; ni < 10; ++ni) {
+  //   for(int nj = 0; nj < 10; ++nj) {
+  //     std::cout << "Label: " << ni << std::endl;
+  //     n.sample_input(rng, ni);
+  //     gsl_vector *sample = n.extract_input_states();
+      
+  //     for(int i = 0; i < 28; ++i ) {
+  // 	for(int j = 0; j < 28; ++j ) {
+  // 	  int y = 2 * (ni * 28 + i);
+  // 	  int x = 2 * (nj * 28 + j);
+  // 	  if(gsl_vector_get(sample, i*28 + j) == 1.0)
+  // 	    gdImageRectangle(img, x, y, x+1, y+1, black);
+  // 	  else
+  // 	    gdImageRectangle(img, x, y, x+1, y+1, white);
+  // 	}
+  //     }
+  //   }
+  // }
+
+  // FILE *pngout;
+  // pngout = fopen("test.png", "wb");
+
+  // gdImagePng(img, pngout);
+  // fclose(pngout);
+  // gdImageDestroy(img);
 
   //  n.dump_states("final_state.tsv");
 

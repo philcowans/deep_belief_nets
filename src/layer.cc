@@ -157,3 +157,15 @@ void Layer::set_label(int label) {
     }
   }
 }  
+
+int Layer::most_probable_label() {
+  int idx = 0;
+  int v = gsl_vector_get(m_p, idx);
+  for(int i = 1; i < 10; ++i) {
+    if(gsl_vector_get(m_p, i) > v) {
+      v = gsl_vector_get(m_p, i);
+      idx = i;
+    }
+  }
+  return idx;
+}

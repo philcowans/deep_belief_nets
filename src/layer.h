@@ -19,6 +19,7 @@ public:
   void set_state(const gsl_vector *state);
   void activate_from_bias();
   void set_label(int label);
+  int most_probable_label();
 
   // Privatise these at some point
   gsl_vector *state(bool ext);

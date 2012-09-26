@@ -19,6 +19,7 @@ public:
   void propagate_observation(gsl_rng *rng, bool mean_field = false);
   void propagate_hidden(gsl_rng *rng, bool ext = true);
   void sample_layer(gsl_rng *rng, int num_iterations, int label);
+  int find_label();
 
 private:
   int m_num_above;

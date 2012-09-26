@@ -125,3 +125,11 @@ void Connection::sample_layer(gsl_rng *rng, int num_iterations, int label) {
     //std::cout << std::endl;
   }
 }
+
+int Connection::find_label() {
+  m_below->set_label(-1); // Hack, but this should work
+  find_probs_upwards();
+  m_above->transfer();
+  find_probs_downwards();
+  return m_below->most_probable_label();
+}

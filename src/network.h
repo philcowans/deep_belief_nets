@@ -19,6 +19,7 @@ public:
   gsl_vector *extract_input_states();
   void dump_states(const char *filename);
   void load_states(const char *filename);
+  int classify(gsl_vector *observations);
   
 private:
   Monitor *m_monitor;
