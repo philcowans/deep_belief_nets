@@ -7,7 +7,7 @@
 
 class MnistDataset : public Dataset {
 public:
-  MnistDataset(const char *images_filename, const char *labels_filename, bool fixed_image);
+  MnistDataset(const char *images_filename, const char *labels_filename);
   ~MnistDataset();
   virtual bool get_value(int i);
   virtual void get_sample(gsl_rng *r, gsl_vector *sample, int example_id);
@@ -15,7 +15,6 @@ public:
   virtual int get_label(int example_id);
   
 private:
-  bool m_fixed_image;
   int32_t m_num_images;
   int32_t m_num_rows;
   int32_t m_num_cols;

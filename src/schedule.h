@@ -3,15 +3,11 @@
 
 class Schedule {
 public:
-  void reset();
-  bool step();
-  int target_layer();
-  int active_image();
-
-  bool m_debug;
-
-private:
-  int m_step_index;
+  virtual void reset() = 0;
+  virtual bool step() = 0;
+  virtual int target_layer() = 0;
+  virtual int active_image() = 0;
+  virtual int step_type() = 0;
 };
 
 #endif

@@ -6,12 +6,15 @@
 #include <iostream>
 #include <fstream>
 
-Network::Network(Monitor *monitor) {
+Network::Network(World *world, Monitor *monitor) {
   m_mean_field = true;
+  m_world = world;
   m_monitor = monitor;
+
+  m_rng = gsl_rng_alloc(gsl_rng_taus);
+
   m_num_layers = 4;
   m_layer_sizes = new int[m_num_layers];
-
   m_layer_sizes[0] = 784;
   m_layer_sizes[1] = 500;
   m_layer_sizes[2] = 510; // Special case
@@ -31,6 +34,8 @@ Network::Network(Monitor *monitor) {
 }
 
 Network::~Network() {
+  gsl_rng_free(m_rng);
+
   delete[] m_layer_sizes;
 
   for(int i = 0; i < m_num_layers; ++i) {
@@ -42,6 +47,18 @@ Network::~Network() {
     delete m_connections[i];
   }
   delete[] m_connections;
+}
+
+void Network::run_step(Schedule *schedule) {
+  if(schedule->step_type() == 0) {
+    greedily_train_layer(m_rng, m_world->training_data(), schedule->target_layer(), schedule);
+  }
+  else if(schedule->step_type() == 1) {
+    gsl_vector *input_observations = gsl_vector_alloc(784); // TODO: Should be okay for dataset to own this rather than copying
+    m_world->training_data()->get_state(input_observations, schedule->active_image());
+    classify(input_observations); // TODO: Something with return value
+    gsl_vector_free(input_observations);
+  }
 }
 
 void Network::train(gsl_rng *rng, Dataset *training_data, Schedule *schedule) {

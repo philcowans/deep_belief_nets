@@ -6,14 +6,18 @@
 #include "layer.h"
 #include "monitor.h"
 #include "schedule.h"
+#include "world.h"
 
-#include "gsl/gsl_rng.h"
-#include "gsl/gsl_vector.h"
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_vector.h>
 
 class Network {
 public:
-  Network(Monitor *monitor);
+  Network(World *world, Monitor *monitor);
   ~Network();
+
+  void run_step(Schedule *schedule);
+
   void train(gsl_rng *rng, Dataset *training_data, Schedule *schedule);
   void sample_input(gsl_rng *rng, int label);
   gsl_vector *extract_input_states();
@@ -23,6 +27,9 @@ public:
   
 private:
   Monitor *m_monitor;
+  World *m_world;
+  gsl_rng *m_rng;
+
   int m_num_layers;
   int *m_layer_sizes;
   Layer **m_layers;

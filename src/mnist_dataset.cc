@@ -3,8 +3,7 @@
 #include <fstream>
 #include <iostream>
 
-MnistDataset::MnistDataset(const char *images_filename, const char *labels_filename, bool fixed_image) {
-  m_fixed_image = fixed_image;
+MnistDataset::MnistDataset(const char *images_filename, const char *labels_filename) {
   load_images(images_filename);
   load_labels(labels_filename);
 }
