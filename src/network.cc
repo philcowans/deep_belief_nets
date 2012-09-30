@@ -51,14 +51,16 @@ Network::~Network() {
 }
 
 void Network::run_step(Schedule *schedule) {
-  if(schedule->step_type() == 0) {
+  if(schedule->step_type() == 0) { // Training step
     greedily_train_layer(m_rng, m_world->training_data(), schedule->target_layer(), schedule);
   }
-  else if(schedule->step_type() == 1) {
+  else if(schedule->step_type() == 1) { // Test classification of a single example
     gsl_vector *input_observations = gsl_vector_alloc(784); // TODO: Should be okay for dataset to own this rather than copying
     m_world->training_data()->get_state(input_observations, schedule->active_image());
     classify(input_observations);
     gsl_vector_free(input_observations);
+  }
+  else if(schedule->step_type() == 2) { // Post training fine tuning
   }
 }
 
