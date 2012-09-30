@@ -11,6 +11,8 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_vector.h>
 
+class Monitor;
+
 class Network {
 public:
   Network(World *world, Monitor *monitor);
@@ -18,12 +20,12 @@ public:
 
   void run_step(Schedule *schedule);
 
-  void train(gsl_rng *rng, Dataset *training_data, Schedule *schedule);
   void sample_input(gsl_rng *rng, int label);
   gsl_vector *extract_input_states();
   void dump_states(const char *filename);
   void load_states(const char *filename);
-  int classify(gsl_vector *observations);
+  
+  int get_label();
   
 private:
   Monitor *m_monitor;
@@ -41,6 +43,10 @@ private:
   void sample(gsl_rng *rng, bool *target, double *p, int size);
   void find_probs_upwards(double *p_above, int n_above, bool *below, int n_below, Connection *connection, Layer *layer_above);
   void find_probs_downwards(double *p_below, int n_below, bool *above, int n_above, Connection *connection, Layer *layer_below);
+
+  int classify(gsl_vector *observations);
+  void train(gsl_rng *rng, Dataset *training_data, Schedule *schedule);
+
 };
 
 #endif

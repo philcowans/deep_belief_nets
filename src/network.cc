@@ -10,6 +10,7 @@ Network::Network(World *world, Monitor *monitor) {
   m_mean_field = true;
   m_world = world;
   m_monitor = monitor;
+  monitor->set_network(this);
 
   m_rng = gsl_rng_alloc(gsl_rng_taus);
 
@@ -56,7 +57,7 @@ void Network::run_step(Schedule *schedule) {
   else if(schedule->step_type() == 1) {
     gsl_vector *input_observations = gsl_vector_alloc(784); // TODO: Should be okay for dataset to own this rather than copying
     m_world->training_data()->get_state(input_observations, schedule->active_image());
-    classify(input_observations); // TODO: Something with return value
+    classify(input_observations);
     gsl_vector_free(input_observations);
   }
 }
@@ -85,6 +86,10 @@ int Network::classify(gsl_vector *observations) {
   for(int i = 0; i < 2; ++i) {
     m_connections[i]->propagate_observation(NULL, m_mean_field);
   }
+  return m_connections[m_num_layers - 2]->find_label();
+}
+
+int Network::get_label() {
   return m_connections[m_num_layers - 2]->find_label();
 }
 

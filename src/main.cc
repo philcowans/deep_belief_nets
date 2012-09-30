@@ -17,19 +17,26 @@ int main(int argc, char **argv) {
   MnistWorld w;
   Device device(&w, &m);
   
-  Schedule *training_schedule = new TrainingSchedule();
-  device.set_schedule(training_schedule);
-  device.run();
-  delete training_schedule;
+  // Schedule *training_schedule = new TrainingSchedule();
+  // device.set_schedule(training_schedule);
+  // device.run();
+  // delete training_schedule;
+
+  device.load_state("final_state_0.1.tsv");
 
   Schedule *test_schedule;
+  int count_correct = 0;
   for(int i = 0; i < 10000; ++i) {
     test_schedule = new TestSchedule(i);
     device.set_schedule(test_schedule);
     device.run();
     int label = m.read_int("label");
+    //    std::cout << label << " -> " << w.training_data()->get_label(test_schedule->active_image()) << std::endl;
+    if(label == w.training_data()->get_label(test_schedule->active_image()))
+      ++count_correct;
     delete test_schedule;
   }
+  std::cout << count_correct << std::endl;
 
   // // params
   // bool fixed_image = false;
