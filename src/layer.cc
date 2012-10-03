@@ -9,6 +9,7 @@ Layer::Layer(int size, bool labels) {
   m_size = size;
   m_labels = labels;
   m_biases = gsl_vector_calloc(m_size);
+  m_biases_down = gsl_vector_calloc(m_size);
   m_deltas = gsl_vector_alloc(m_size);
   m_state = gsl_vector_alloc(m_size);
   m_p = gsl_vector_alloc(m_size);
@@ -22,6 +23,7 @@ Layer::Layer(int size, bool labels) {
 
 Layer::~Layer() {
   gsl_vector_free(m_biases);
+  gsl_vector_free(m_biases_down);
   gsl_vector_free(m_deltas);
   gsl_vector_free(m_state);
   gsl_vector_free(m_p);

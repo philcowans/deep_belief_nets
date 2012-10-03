@@ -12,11 +12,13 @@ Connection::Connection(Layer *below, Layer *above) {
   m_num_below = below->size(true);
   m_weights = gsl_matrix_alloc(m_num_above, m_num_below);
   m_deltas = gsl_matrix_alloc(m_num_above, m_num_below);
+  m_weights_down = gsl_matrix_alloc(m_num_above, m_num_below);
 }
 
 Connection::~Connection() {
   gsl_matrix_free(m_weights);
   gsl_matrix_free(m_deltas);
+  gsl_matrix_free(m_weights_down);
 }
 
 double Connection::get_weight(int i, int j) {

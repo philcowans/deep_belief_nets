@@ -61,6 +61,13 @@ void Network::run_step(Schedule *schedule) {
     gsl_vector_free(input_observations);
   }
   else if(schedule->step_type() == 2) { // Post training fine tuning
+    gsl_vector *input_observations = gsl_vector_alloc(784); // TODO: Should be okay for dataset to own this rather than copying
+    m_world->training_data()->get_state(input_observations, schedule->active_image());
+    fine_tune(input_observations, schedule->active_image());
+    gsl_vector_free(input_observations);
+  }
+  else if(schedule->step_type() == 3) { // Sampling input units with fixed labels
+    sample_input(m_rng, schedule->active_label());
   }
 }
 
@@ -168,4 +175,32 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n, 
   }
   m_connections[n]->perform_update_step(rng);
   gsl_vector_free(input_observations);
+}
+
+void Network::fine_tune(gsl_vector *observations, int label) {
+  // Todo - implement separation of forward and backwards probs
+  // Todo - think about hard linear separation of incoming weights and labels as in the paper
+
+  m_layers[0]->set_state(observations);
+  // Propagate all the way to the top using sampling rater than mean field
+  for(int i = 0; i < 3; ++i) {
+    if(i == 2) {
+      m_layers[2]->set_label(label);
+    }
+    m_connections[i]->propagate_observation(m_rng, false);
+  }
+
+  // Update positive phase states here
+
+  // Gibbs iterations 
+  m_connections[m_num_layers - 2]->sample_layer(rng, 1000, label);
+
+  // Update negative phase states here
+
+  // Propagate back down to the visible layer
+  for(int i = m_num_lateyers - 3, i >= 0; --i) {
+    m_connections[i]->propagate_hidden(m_rng, false);
+  }
+
+  
 }

@@ -11,8 +11,6 @@
 //#include <gd.h>
 
 int main(int argc, char **argv) {
-  //  gsl_rng *rng = gsl_rng_alloc(gsl_rng_taus);
-
   Monitor m;
   MnistWorld w;
   Device device(&w, &m);
@@ -31,7 +29,6 @@ int main(int argc, char **argv) {
     device.set_schedule(test_schedule);
     device.run();
     int label = m.read_int("label");
-    //    std::cout << label << " -> " << w.training_data()->get_label(test_schedule->active_image()) << std::endl;
     if(label == w.training_data()->get_label(test_schedule->active_image()))
       ++count_correct;
     delete test_schedule;

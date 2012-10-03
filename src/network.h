@@ -46,7 +46,7 @@ private:
 
   int classify(gsl_vector *observations);
   void train(gsl_rng *rng, Dataset *training_data, Schedule *schedule);
-
+  void fine_tune(gsl_vector *observations, int label);
 };
 
 #endif

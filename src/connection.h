@@ -26,6 +26,9 @@ private:
   int m_num_below;
   gsl_matrix *m_weights;
   gsl_matrix *m_deltas;
+
+  gsl_matrix *m_weights_down;
+
   Layer *m_above;
   Layer *m_below;
 
