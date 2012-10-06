@@ -8,7 +8,7 @@
 
 class Connection {
 public:
-  Connection(Layer *below, Layer *above);
+  Connection(Layer *below, Layer *above, Layer *below_input = NULL);
   ~Connection();
   double get_weight(int i, int j);
   void set_weight(int i, int j, double v);
@@ -31,6 +31,7 @@ private:
 
   Layer *m_above;
   Layer *m_below;
+  Layer *m_below_input;
 
   void find_probs_upwards();
   void find_probs_downwards();

@@ -35,6 +35,7 @@ private:
   int m_num_layers;
   int *m_layer_sizes;
   Layer **m_layers;
+  Layer *m_input_label_layer;
   Connection **m_connections;
   bool m_mean_field;
 

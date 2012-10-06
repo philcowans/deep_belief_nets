@@ -28,9 +28,14 @@ Network::Network(World *world, Monitor *monitor) {
     bool labels = (i == 2);
     m_layers[i] = new Layer(m_layer_sizes[i], labels);
   }
+  
+  m_label_input_layer = new Layer(10, false);
 
   for(int i = 0; i < m_num_layers - 1; ++i) {
-    m_connections[i] = new Connection(m_layers[i], m_layers[i + 1]);
+    if(i == m_num_layers - 2) 
+      m_connections[i] = new Connection(m_layers[i], m_layers[i + 1], m_label_input_layer);
+    else
+      m_connections[i] = new Connection(m_layers[i], m_layers[i + 1]);
   }
 }
 
@@ -43,7 +48,8 @@ Network::~Network() {
     delete m_layers[i];
   }
   delete[] m_layers;
-    
+  delete m_input_label_layer;
+
   for(int i = 0; i < m_num_layers - 1; ++i) {
     delete m_connections[i];
   }
