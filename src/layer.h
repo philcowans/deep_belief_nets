@@ -38,7 +38,7 @@ private:
   gsl_vector *m_activation;
   gsl_vector *m_biases;
   gsl_vector *m_deltas;
-  gsl_vector *m_biases_down; // Not 100% sure this is needed
+  gsl_vector *m_biases_down;
   gsl_vector_view m_state_view;
   gsl_vector_view m_p_view;
   gsl_vector_view m_activation_view;

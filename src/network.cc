@@ -178,6 +178,16 @@ void Network::greedily_train_layer(gsl_rng *rng, Dataset *training_data, int n, 
 }
 
 void Network::fine_tune(gsl_vector *observations, int label) {
+  // \% UP-DOWN ALGORITHM
+  // \%
+  // \% the data and all biases are row vectors.
+  // \% the generative model is: lab <--> top <--> pen --> hid --> vis
+  // \% the number of units in layer foo is numfoo
+  // \% weight matrices have names fromlayer tolayer
+  // \% "rec" is for recognition biases and "gen" is for generative
+  // \% biases.
+  // \% for simplicity, the same learning rate, r, is used everywhere.
+
   // Todo - implement separation of forward and backwards probs
   // Todo - think about hard linear separation of incoming weights and labels as in the paper
 
@@ -190,17 +200,44 @@ void Network::fine_tune(gsl_vector *observations, int label) {
     m_connections[i]->propagate_observation(m_rng, false);
   }
 
-  // Update positive phase states here
+  // \% POSITIVE PHASE STATISTICS FOR CONTRASTIVE DIVERGENCE
+  // poslabtopstatistics = targets’ * waketopstates;
+  // pospentopstatistics = wakepenstates’ * waketopstates;
 
   // Gibbs iterations 
   m_connections[m_num_layers - 2]->sample_layer(rng, 1000, label);
 
-  // Update negative phase states here
+  // \% NEGATIVE PHASE STATISTICS FOR CONTRASTIVE DIVERGENCE
+  // negpentopstatistics = negpenstates’*negtopstates;
+  // neglabtopstatistics = neglabprobs’*negtopstates;
 
   // Propagate back down to the visible layer
   for(int i = m_num_lateyers - 3, i >= 0; --i) {
     m_connections[i]->propagate_hidden(m_rng, false);
   }
 
-  
+  // \% PREDICTIONS
+  // psleeppenstates = logistic(sleephidstates*hidpen + penrecbiases);
+  // psleephidstates = logistic(sleepvisprobs*vishid + hidrecbiases);
+  // pvisprobs = logistic(wakehidstates*hidvis + visgenbiases);
+  // phidprobs = logistic(wakepenstates*penhid + hidgenbiases);
+
+  // \% UPDATES TO GENERATIVE PARAMETERS
+  // hidvis = hidvis + r*poshidstates’*(data-pvisprobs);
+  // visgenbiases = visgenbiases + r*(data - pvisprobs);
+  // penhid = penhid + r*wakepenstates’*(wakehidstates-phidprobs);
+  // hidgenbiases = hidgenbiases + r*(wakehidstates - phidprobs);
+
+  // \% UPDATES TO TOP LEVEL ASSOCIATIVE MEMORY PARAMETERS
+  // labtop = labtop + r*(poslabtopstatistics-neglabtopstatistics);
+  // labgenbiases = labgenbiases + r*(targets - neglabprobs);
+  // pentop = pentop + r*(pospentopstatistics - negpentopstatistics);
+  // pengenbiases = pengenbiases + r*(wakepenstates - negpenstates);
+  // topbiases = topbiases + r*(waketopstates - negtopstates);
+
+  // \%UPDATES TO RECOGNITION/INFERENCE APPROXIMATION PARAMETERS
+  // hidpen = hidpen + r*(sleephidstates’*(sleeppenstatespsleeppenstates));
+  // penrecbiases = penrecbiases + r*(sleeppenstates-psleeppenstates);
+  // vishid = vishid + r*(sleepvisprobs’*(sleephidstatespsleephidstates));
+  // hidrecbiases = hidrecbiases + r*(sleephidstates-psleephidstates);
 }
