@@ -191,30 +191,63 @@ void Network::fine_tune(gsl_vector *observations, int label) {
   // Todo - implement separation of forward and backwards probs
   // Todo - think about hard linear separation of incoming weights and labels as in the paper
 
+  // TODO: Init deltas
+
   m_layers[0]->set_state(observations);
   // Propagate all the way to the top using sampling rater than mean field
   for(int i = 0; i < 3; ++i) {
     if(i == 2) {
       m_layers[2]->set_label(label);
     }
+
     m_connections[i]->propagate_observation(m_rng, false);
+    m_connections[i]->find_probs_downwards();
+
+    gsl_vector_add(m_layers[i]->delta_down, m_layers[i]->state(false));
+    gsl_vector_sub(m_layers[i]->delta_down, m_layers[i]->p(false));
+    gsl_vector_scale(m_layers[i]->delta_down, epsilon);
+
+    gsl_blas_dger(m_layers[i]->delta_down, m_layers[i+1]->state(false), m_connections[i]->delta_down);
   }
 
   // \% POSITIVE PHASE STATISTICS FOR CONTRASTIVE DIVERGENCE
   // poslabtopstatistics = targets’ * waketopstates;
   // pospentopstatistics = wakepenstates’ * waketopstates;
 
-  // Gibbs iterations 
+  gsl_vector_add(m_layers[m_num_layers - 1]->delta, m_layers[m_num_layers - 1]->state(false));
+  gsl_vector_add(m_layers[m_num_layers - 2]->delta, m_layers[m_num_layers - 2]->state(false));
+    
+
+  gsl_blas_dger(epsilon, m_layers[m_num_layers - 1]->state(false), m_layers[m_num_layers - 2]->state(true), m_connections[m_num_layers -2]->delta); // TODO: Confirm these are still coupled, plus learning rates
+
+// Gibbs iterations 
   m_connections[m_num_layers - 2]->sample_layer(rng, 1000, label);
 
   // \% NEGATIVE PHASE STATISTICS FOR CONTRASTIVE DIVERGENCE
   // negpentopstatistics = negpenstates’*negtopstates;
   // neglabtopstatistics = neglabprobs’*negtopstates;
+  
+  gsl_vector_sub(m_layers[m_num_layers - 1]->delta, m_layers[m_num_layers - 1]->state(false));
+  gsl_vector_sub(m_layers[m_num_layers - 2]->delta, m_layers[m_num_layers - 2]->state(false));
+  gsl_vector_scale(m_layers[m_num_layers - 1]->delta, epsilon);
+  gsl_vector_scale(m_layers[m_num_layers - 2]->delta, epsilon);
+
+  gsl_blas_dger(-epsilon, m_layers[m_num_layers - 1]->state(false), m_layers[m_num_layers - 2]->state(true), m_connections[m_num_layers -2]->delta); // TODO: Confirm these are still coupled, plus learning rates
 
   // Propagate back down to the visible layer
   for(int i = m_num_lateyers - 3, i >= 0; --i) {
     m_connections[i]->propagate_hidden(m_rng, false);
+    m_connections[i]->find_probs_upwards();
+
+    gsl_vector_add(m_layers[i+1]->delta, m_layers[i+1]->state(false));
+    gsl_vector_sub(m_layers[i+1]->delta, m_layers[i+1]->p(false));
+    gsl_vector_scale(m_layers[i+1]->delta_down, epsilon);
+
+    gsl_blas_dger(m_layers[i+1]->delta, m_layers[i]->state(false), m_connections[i]->delta);
+
   }
+
+  // TODO: Commit deltas
 
   // \% PREDICTIONS
   // psleeppenstates = logistic(sleephidstates*hidpen + penrecbiases);
@@ -228,16 +261,18 @@ void Network::fine_tune(gsl_vector *observations, int label) {
   // penhid = penhid + r*wakepenstates’*(wakehidstates-phidprobs);
   // hidgenbiases = hidgenbiases + r*(wakehidstates - phidprobs);
 
-  // \% UPDATES TO TOP LEVEL ASSOCIATIVE MEMORY PARAMETERS
-  // labtop = labtop + r*(poslabtopstatistics-neglabtopstatistics);
-  // labgenbiases = labgenbiases + r*(targets - neglabprobs);
-  // pentop = pentop + r*(pospentopstatistics - negpentopstatistics);
-  // pengenbiases = pengenbiases + r*(wakepenstates - negpenstates);
-  // topbiases = topbiases + r*(waketopstates - negtopstates);
 
   // \%UPDATES TO RECOGNITION/INFERENCE APPROXIMATION PARAMETERS
   // hidpen = hidpen + r*(sleephidstates’*(sleeppenstatespsleeppenstates));
   // penrecbiases = penrecbiases + r*(sleeppenstates-psleeppenstates);
   // vishid = vishid + r*(sleepvisprobs’*(sleephidstatespsleephidstates));
   // hidrecbiases = hidrecbiases + r*(sleephidstates-psleephidstates);
+
+
+  // \% UPDATES TO TOP LEVEL ASSOCIATIVE MEMORY PARAMETERS
+  // labtop = labtop + r*(poslabtopstatistics-neglabtopstatistics);
+  // labgenbiases = labgenbiases + r*(targets - neglabprobs);
+  // pentop = pentop + r*(pospentopstatistics - negpentopstatistics);
+  // pengenbiases = pengenbiases + r*(wakepenstates - negpenstates);
+  // topbiases = topbiases + r*(waketopstates - negtopstates);
 }
